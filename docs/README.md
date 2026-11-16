@@ -5,6 +5,10 @@ VoxCtrl Keys is a voice keyboard for Android and a thin client for a
 server transcribes, the keyboard types. The server is yours; nothing else is
 contacted.
 
+> **`main` holds the project's structure, its documentation and the `core`
+> module.** The Android app itself (`app/`) is in the first pull request.
+> Pages that describe the app are ahead of `main` until that is merged.
+
 ---
 
 ## Index

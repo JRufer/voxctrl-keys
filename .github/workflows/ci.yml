@@ -31,24 +31,3 @@ jobs:
       # including the bar's layout on every Galaxy Z Fold 8 screen and posture.
       - name: Core tests
         run: ./gradlew :core:test
-
-      - name: Build the debug APK
-        run: ./gradlew :app:assembleDebug
-
-      - name: Android lint
-        run: ./gradlew :app:lintDebug
-
-      - name: Upload the debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: voxctrl-keys-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-
-      - name: Upload the lint report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-report
-          path: app/build/reports/lint-results-debug.*
-          if-no-files-found: ignore

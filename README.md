@@ -18,6 +18,10 @@ Tap the microphone, speak, tap again. Your words appear in the text field as
 you say them and are replaced by the final transcript when you stop. The button
 on the left switches back to your typing keyboard.
 
+> **`main` holds the project's structure, its documentation and the `core`
+> module.** The Android app itself (`app/`) is in the first pull request.
+> Pages that describe the app are ahead of `main` until that is merged.
+>
 > **Status: 0.1.0, first implementation.** It builds and its logic is tested
 > in CI, but it has not yet been run on a phone. See
 > [what is and is not verified](docs/development.md#what-is-verified).
