@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- To reach the one server the user enters. Nothing else is contacted. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- To record a dictation, only between a tap on the microphone and the tap that ends it. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+
+    <!--
+      allowBackup=false and the extraction rules keep the server address and
+      the API key out of cloud backups and device-to-device transfers.
+
+      usesCleartextTraffic=true because a VoxCtrl server speaks plain HTTP
+      unless its encryption is on, and a tailnet or home network is the normal
+      way to reach it. The settings screen warns when an address would send
+      audio unencrypted across the internet. See docs/privacy.md.
+    -->
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.VoxKeys"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="36">
+
+        <service
+            android:name=".VoxKeyboardService"
+            android:exported="true"
+            android:label="@string/keyboard_name"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

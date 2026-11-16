@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The whole keyboard: one short row.
+
+      [switch keyboard] [microphone pill] [backspace / discard]
+
+  The row is laid out here for a compact window. KeyboardBar re-weights the
+  pill and the two spaces for wide windows and folds, following
+  BarLayout in the core module. See docs/ui.md.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bar_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/bg_1"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/line" />
+
+    <LinearLayout
+        android:id="@+id/bar_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/bar_padding_side"
+        android:paddingTop="@dimen/bar_padding_top"
+        android:paddingEnd="@dimen/bar_padding_side"
+        android:paddingBottom="@dimen/bar_padding_bottom">
+
+        <ImageButton
+            android:id="@+id/btn_switch"
+            android:layout_width="@dimen/bar_button"
+            android:layout_height="@dimen/bar_button"
+            android:background="@drawable/bg_button"
+            android:contentDescription="@string/switch_keyboard"
+            android:src="@drawable/ic_keyboard"
+            android:tint="@color/txt_1" />
+
+        <Space
+            android:id="@+id/space_left"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0" />
+
+        <LinearLayout
+            android:id="@+id/pill"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/bar_button"
+            android:layout_marginStart="@dimen/bar_gap"
+            android:layout_marginEnd="@dimen/bar_gap"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="5dp"
+            android:paddingEnd="14dp">
+
+            <FrameLayout
+                android:layout_width="@dimen/pill_icon"
+                android:layout_height="@dimen/pill_icon">
+
+                <ImageView
+                    android:id="@+id/pill_icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_circle_muted"
+                    android:importantForAccessibility="no"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_voxctrl" />
+
+                <ImageView
+                    android:id="@+id/pill_glyph"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_circle_cyan"
+                    android:importantForAccessibility="no"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_stop"
+                    android:tint="@color/bg_0"
+                    android:visibility="gone" />
+
+                <ProgressBar
+                    android:id="@+id/pill_spinner"
+                    style="?android:attr/progressBarStyleSmall"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/cyan_0"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/pill_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="1"
+                android:text="@string/tap_to_speak"
+                android:textColor="@color/txt_0"
+                android:textSize="15sp" />
+
+            <ai.voxctrl.keys.WaveformView
+                android:id="@+id/pill_wave"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/pill_trailing"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:drawablePadding="6dp"
+                android:ellipsize="end"
+                android:fontFamily="monospace"
+                android:maxLines="1"
+                android:maxWidth="130dp"
+                android:textColor="@color/txt_1"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <Space
+            android:id="@+id/space_right"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0" />
+
+        <ImageButton
+            android:id="@+id/btn_right"
+            android:layout_width="@dimen/bar_button"
+            android:layout_height="@dimen/bar_button"
+            android:background="@drawable/bg_button"
+            android:contentDescription="@string/backspace"
+            android:src="@drawable/ic_backspace"
+            android:tint="@color/txt_1" />
+    </LinearLayout>
+</LinearLayout>

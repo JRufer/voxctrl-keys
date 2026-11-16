@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settings_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
+    <!-- One column, capped in width so it stays readable on an unfolded screen. -->
+    <LinearLayout
+        android:id="@+id/settings_column"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="32dp">
+
+        <TextView style="@style/SettingsTitle" android:text="@string/app_name" />
+
+        <!-- Keyboard -->
+        <TextView style="@style/SettingsHeading" android:text="@string/section_keyboard" />
+        <TextView android:id="@+id/keyboard_status" style="@style/SettingsBody" />
+        <LinearLayout style="@style/SettingsButtonRow">
+            <Button android:id="@+id/btn_enable" style="@style/SettingsButton" android:text="@string/enable_keyboard" />
+            <Button android:id="@+id/btn_choose" style="@style/SettingsButton" android:text="@string/choose_keyboard" />
+        </LinearLayout>
+
+        <!-- Microphone -->
+        <TextView style="@style/SettingsHeading" android:text="@string/section_microphone" />
+        <TextView android:id="@+id/mic_status" style="@style/SettingsBody" />
+        <LinearLayout style="@style/SettingsButtonRow">
+            <Button android:id="@+id/btn_mic" style="@style/SettingsButton" android:text="@string/allow" />
+        </LinearLayout>
+
+        <!-- Server -->
+        <TextView style="@style/SettingsHeading" android:text="@string/section_server" />
+        <TextView style="@style/SettingsBody" android:text="@string/server_intro" />
+
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/edit_address" android:text="@string/address" />
+        <EditText
+            android:id="@+id/edit_address"
+            style="@style/SettingsField"
+            android:hint="@string/address_hint"
+            android:importantForAutofill="no"
+            android:inputType="textUri" />
+
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/edit_pairing" android:text="@string/pairing_code" />
+        <EditText
+            android:id="@+id/edit_pairing"
+            style="@style/SettingsField"
+            android:hint="@string/pairing_hint"
+            android:importantForAutofill="no"
+            android:inputType="textVisiblePassword|textNoSuggestions" />
+        <LinearLayout style="@style/SettingsButtonRow">
+            <Button android:id="@+id/btn_pair" style="@style/SettingsButton" android:text="@string/pair" />
+        </LinearLayout>
+
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/edit_key" android:text="@string/api_key" />
+        <EditText
+            android:id="@+id/edit_key"
+            style="@style/SettingsField"
+            android:hint="@string/api_key_hint"
+            android:importantForAutofill="no"
+            android:inputType="textPassword" />
+
+        <LinearLayout style="@style/SettingsButtonRow">
+            <Button android:id="@+id/btn_test" style="@style/SettingsButton" android:text="@string/save_and_test" />
+            <Button android:id="@+id/btn_unpair" style="@style/SettingsButton" android:text="@string/remove_pairing" />
+        </LinearLayout>
+        <TextView android:id="@+id/server_status" style="@style/SettingsBody" android:accessibilityLiveRegion="polite" />
+        <TextView android:id="@+id/network_note" style="@style/SettingsBody" />
+
+        <!-- Dictation -->
+        <TextView style="@style/SettingsHeading" android:text="@string/section_dictation" />
+        <Switch
+            android:id="@+id/switch_live"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/live_text"
+            android:textSize="16sp" />
+        <TextView style="@style/SettingsBody" android:text="@string/live_text_note" />
+
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/edit_language" android:text="@string/language" />
+        <EditText
+            android:id="@+id/edit_language"
+            style="@style/SettingsField"
+            android:hint="@string/language_hint"
+            android:importantForAutofill="no"
+            android:inputType="textNoSuggestions" />
+
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/edit_vocabulary" android:text="@string/vocabulary" />
+        <EditText
+            android:id="@+id/edit_vocabulary"
+            style="@style/SettingsField"
+            android:hint="@string/vocabulary_hint"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textNoSuggestions" />
+
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/spinner_position" android:text="@string/mic_position" />
+        <Spinner
+            android:id="@+id/spinner_position"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/mic_positions"
+            android:minHeight="48dp" />
+
+        <!-- Try it -->
+        <TextView style="@style/SettingsHeading" android:text="@string/section_try" />
+        <EditText
+            android:id="@+id/edit_try"
+            style="@style/SettingsField"
+            android:gravity="top"
+            android:hint="@string/try_hint"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minLines="3" />
+
+        <!-- Privacy -->
+        <TextView style="@style/SettingsHeading" android:text="@string/section_privacy" />
+        <TextView style="@style/SettingsBody" android:text="@string/privacy_summary" />
+        <TextView android:id="@+id/version_line" style="@style/SettingsBody" android:fontFamily="monospace" android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

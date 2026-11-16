@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Keep these three in step with BarLayout.SIDE_DP in the core module (48 + 8 + 10). -->
+    <dimen name="bar_button">48dp</dimen>
+    <dimen name="bar_gap">8dp</dimen>
+    <dimen name="bar_padding_side">10dp</dimen>
+
+    <dimen name="bar_padding_top">6dp</dimen>
+    <dimen name="bar_padding_bottom">8dp</dimen>
+    <dimen name="pill_icon">38dp</dimen>
+</resources>
