@@ -16,8 +16,14 @@ captures/
 # Signing: never commit a release keystore or its passwords
 *.jks
 *.keystore
+*.p12
 keystore.properties
+# ...except the throwaway certificate the core tests use
+!core/src/test/resources/test-server.p12
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Release build output (scripts/build-release.sh)
+dist/

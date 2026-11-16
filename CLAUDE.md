@@ -18,9 +18,10 @@ Rules that are easy to break:
   `android.*`.
 - **One network destination.** `ServerClient` is the only code that opens a
   connection. No analytics, no logging of audio or text.
-- **Releases.** Bump `versionName` and `versionCode` in
-  `app/build.gradle.kts` and add `docs/release-notes/<version>.md` for every
-  change that is going to be released.
+- **Releases.** Raise `VERSION_NAME` in `gradle.properties` (the only place
+  the version is written) and add `docs/release-notes/<version>.md` for every
+  change that is going to be released. The signing key is never in the
+  repository; see `docs/release-signing.md`.
 - **Branches.** `main` is the integration branch; work arrives as pull
   requests. Bug reports go through GitHub issues.
 

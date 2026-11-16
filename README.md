@@ -31,8 +31,9 @@ on the left switches back to your typing keyboard.
 
 ## Quick start
 
-1. Install the APK ([building it](docs/development.md), or the
-   `voxctrl-keys-debug-apk` artifact of a CI run).
+1. Install the APK from the [latest release](https://github.com/JRufer/voxctrl-keys/releases).
+   (Before the first release is published: the `voxctrl-keys-debug-apk`
+   artifact of a CI run.)
 2. Open **VoxCtrl Keys**, turn the keyboard on in the system's keyboard list,
    and allow the microphone.
 3. On the server, run `voxctrl-server --pairing-code`. Paste the code into the
@@ -54,6 +55,7 @@ Everything is in [`docs/`](docs/README.md):
 | [Server protocol](docs/protocol.md) | The contract with `voxctrl-server` |
 | [Keeping in sync with VoxCtrl](docs/sync-with-voxctrl.md) | What to check, in which repository, when either side changes |
 | [Development](docs/development.md) | Building, testing, releasing |
+| [Building and signing releases](docs/release-signing.md) | The release APK, the signing key, verifying a download |
 
 ## Repository layout
 
@@ -63,7 +65,8 @@ voxctrl-keys/
 ├── core/     # Plain Kotlin, no Android: server client, pairing codes, layout rules. Unit-tested on the JVM
 ├── docs/     # Documentation (kept accurate with the code; see docs/development.md)
 ├── assets/   # The VoxCtrl icon
-└── .github/  # CI: tests, debug APK, lint
+├── scripts/  # build-release.sh: the signed release APK
+└── .github/  # CI (tests, debug APK, lint) and the Release workflow
 ```
 
 ## Reporting a problem

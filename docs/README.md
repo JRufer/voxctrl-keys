@@ -20,6 +20,7 @@ contacted.
 | [Server Protocol](./protocol.md) | The exact requests the keyboard makes to `voxctrl-server`, and what it expects back |
 | [Keeping in Sync with VoxCtrl](./sync-with-voxctrl.md) | Which changes in either repository affect the other, and the checklist for each |
 | [Development Guide](./development.md) | Building, testing, CI, versioning, releasing, what is and is not verified |
+| [Building and Signing Releases](./release-signing.md) | How the installable APK is built and signed, the one-time key setup, making a release, verifying a download |
 | [Release notes](./release-notes/) | One file per released version |
 
 ---
