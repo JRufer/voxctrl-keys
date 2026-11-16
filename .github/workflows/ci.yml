@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  # Every pull request, whatever it targets, as in the VoxCtrl repository: a
+  # change stacked on another branch is still compiled and tested on its own.
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The server client, pairing codes and layout rules: plain JVM tests,
+      # including the bar's layout on every Galaxy Z Fold 8 screen and posture.
+      - name: Core tests
+        run: ./gradlew :core:test
+
+      - name: Build the debug APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Android lint
+        run: ./gradlew :app:lintDebug
+
+      - name: Upload the debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxctrl-keys-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload the lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
