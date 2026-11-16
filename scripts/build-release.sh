@@ -67,9 +67,13 @@ cp "$built" "$apk"
 
 # Refuse to hand over an APK whose signature does not verify.
 "$apksigner" verify "$apk"
-certificate=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+# The line's prefix differs between apksigner versions ("Signer #1 ...",
+# "Signer (minSdkVersion=...) ..."), so match on what follows it.
+certs=$("$apksigner" verify --print-certs "$apk")
+certificate=$(printf '%s\n' "$certs" | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)
 if [ -z "$certificate" ]; then
-    echo "error: could not read the signing certificate from $apk." >&2
+    echo "error: could not read the signing certificate from $apk. apksigner printed:" >&2
+    printf '%s\n' "$certs" >&2
     exit 1
 fi
 

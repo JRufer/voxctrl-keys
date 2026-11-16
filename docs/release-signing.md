@@ -173,7 +173,7 @@ sha256sum -c VoxCtrl-Keys-0.1.0.apk.sha256
 apksigner verify --print-certs VoxCtrl-Keys-0.1.0.apk
 ```
 
-The `Signer #1 certificate SHA-256 digest` should be the same for every
+The `certificate SHA-256 digest` it prints should be the same for every
 release of VoxCtrl Keys. Android enforces this itself on an update: it refuses
 an APK signed with a different key than the installed app. The check matters
 most for a first install, when there is nothing to compare against.
