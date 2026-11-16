@@ -35,7 +35,15 @@ monospace for status).
    48×48dp           48dp tall                           48×48dp
 ```
 
-Total height: 63 dp.
+Total height: 63 dp, plus the height of the system's navigation strip
+beneath it.
+
+**The strip under the row.** A keyboard's window reaches the bottom edge of
+the screen. With gesture navigation, Android draws the gesture handle there
+and, while a keyboard is showing, its own switch-keyboard button (bottom left)
+and hide-keyboard button (bottom right). The bar pads itself by that inset, so
+the row above is never under those buttons; the bar's background colour
+continues behind them. The strip's height is the system's, not the bar's.
 
 | Part | Tap | Hold |
 |---|---|---|
@@ -103,6 +111,9 @@ width is the pill.
 
 Other cases:
 
+- **System bars and cut-outs.** The bar is padded by the navigation bar and
+  display cut-out insets: at the bottom always, and at the sides in landscape.
+  Widths in the table above are measured inside that padding.
 - **Landscape.** The keyboard never goes full-screen (`onEvaluateFullscreenMode`
   returns false), so the app stays visible above the one row.
 - **Horizontal fold (tabletop posture).** Nothing special is needed. Android
@@ -135,14 +146,14 @@ of this table without breaking any.
 | Half open like a laptop (tabletop, horizontal fold) | ~616 or ~816 dp | As open flat; the keyboard is on the lower half |
 | Unfolding or folding while the keyboard is up | changes | The bar is rebuilt for the new width and fold. A recording in progress is meant to carry on across the change; this is the least certain case until it is tried on the device |
 
-`BarLayoutTest` runs each of these. **None of it has been checked on a real
-Fold 8 yet.** Two things in particular need a look on the device, because they
-depend on what the phone reports rather than on this app's logic:
+`BarLayoutTest` runs each of these. On the device itself, so far:
 
-1. Whether the Fold 8 reports its fold and posture to a keyboard at all. If it
-   does not, the book-posture rule never triggers and the pill stays centred,
-   which is usable but sits on the hinge.
-2. The bar's bottom edge against the gesture bar on both screens.
+| | Status |
+|---|---|
+| Cover screen, upright | **Seen working** (0.1.0): compact layout, server name and status dot shown, dictation typed into a text field |
+| The row against the system's navigation strip | Overlapped in 0.1.0. Fixed in 0.1.1 by padding the bar by the inset; **the fix has not been seen on the device yet** |
+| Cover screen sideways; inner screen, upright and sideways | Not yet seen |
+| Book and tabletop postures | Not yet seen. Still open: whether the Fold 8 reports its fold and posture to a keyboard at all. If it does not, the book-posture rule never triggers and the pill stays centred, which is usable but sits on the hinge |
 
 ## Accessibility
 
@@ -163,7 +174,7 @@ depend on what the phone reports rather than on this app's logic:
 | | |
 |---|---|
 | `app/src/main/res/layout/keyboard_bar.xml` | The row and its views |
-| `app/.../KeyboardBar.kt` | `BarState`, showing a state, applying the layout |
+| `app/.../KeyboardBar.kt` | `BarState`, showing a state, applying the layout, padding for the system's insets |
 | `app/.../WaveformView.kt` | The waveform |
 | `app/.../FoldWatcher.kt` | Fold and posture, via `androidx.window` |
 | `core/.../BarLayout.kt` | The layout rules |

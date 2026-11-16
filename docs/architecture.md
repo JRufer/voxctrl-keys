@@ -120,6 +120,10 @@ fold changes: `BarLayout.compute` returns the pill's width and the share of
 free space to put on its left, and `KeyboardBar.applyLayout` turns that into
 `LinearLayout` weights. See [The Keyboard Bar](./ui.md#layout-rules).
 
+`KeyboardBar` also listens for window insets and pads the bar by the
+navigation bar and display cut-out, so the row never sits under the system's
+own keyboard buttons along the bottom edge.
+
 `FoldWatcher` wraps `androidx.window`'s `WindowInfoTracker`. It is started with
 the input view and reports the first `FoldingFeature`, or null. Everything it
 does is inside a `try`: on a device or Android version that gives a keyboard no

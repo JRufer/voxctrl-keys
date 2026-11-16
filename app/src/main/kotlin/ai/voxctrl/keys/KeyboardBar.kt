@@ -5,9 +5,12 @@ import android.annotation.SuppressLint
 import android.content.res.ColorStateList
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
+import android.graphics.Insets
+import android.os.Build
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.view.WindowInsets
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -121,6 +124,39 @@ class KeyboardBar(
         }
         // For a screen reader's double-tap, which sends a click rather than touches.
         rightButton.setOnClickListener { if (rightIsBackspace) onBackspace() else onRight() }
+
+        // The keyboard's window reaches the bottom edge of the screen, under the
+        // system's navigation bar, where Android also draws its own
+        // switch-keyboard and hide-keyboard buttons. Pad the bar by that
+        // inset so its row sits above them; the bar's background still
+        // fills the strip behind them. The sides matter in landscape, for a
+        // navigation bar or camera cut-out at the edge.
+        //
+        // On Android versions that still keep a keyboard clear of the bars
+        // themselves, the inset arrives here as zero and nothing is added.
+        root.setOnApplyWindowInsetsListener { view, insets ->
+            val bars = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            } else {
+                @Suppress("DEPRECATION")
+                Insets.of(
+                    insets.systemWindowInsetLeft,
+                    0,
+                    insets.systemWindowInsetRight,
+                    insets.systemWindowInsetBottom,
+                )
+            }
+            if (view.paddingLeft != bars.left || view.paddingRight != bars.right || view.paddingBottom != bars.bottom) {
+                view.setPadding(bars.left, 0, bars.right, bars.bottom)
+                applied = null // the room for the row changed
+            }
+            insets
+        }
+        root.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(view: View) = view.requestApplyInsets()
+
+            override fun onViewDetachedFromWindow(view: View) = Unit
+        })
 
         root.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
             if (right - left != oldRight - oldLeft || applied == null) root.post { applyLayout() }
@@ -268,7 +304,8 @@ class KeyboardBar(
 
     /** Sizes the pill and the spaces beside it for this window; see [BarLayout]. */
     private fun applyLayout() {
-        val widthPx = root.width
+        // The row's room: the bar's width less any side insets.
+        val widthPx = root.width - root.paddingLeft - root.paddingRight
         if (widthPx <= 0) return
         val widthDp = (widthPx / density).toInt()
         val result = BarLayout.compute(widthDp, prefs.pillPosition, verticalFold())
@@ -306,9 +343,12 @@ class KeyboardBar(
         if (feature.orientation != FoldingFeature.Orientation.VERTICAL) return null
         val origin = IntArray(2)
         root.getLocationInWindow(origin)
-        val left = feature.bounds.left - origin[0]
-        val right = feature.bounds.right - origin[0]
-        if (right <= 0 || left >= root.width) return null
+        // In the row's own coordinates, which start after any left inset.
+        val rowStart = origin[0] + root.paddingLeft
+        val rowWidth = root.width - root.paddingLeft - root.paddingRight
+        val left = feature.bounds.left - rowStart
+        val right = feature.bounds.right - rowStart
+        if (right <= 0 || left >= rowWidth) return null
         return BarLayout.VerticalFold(
             leftDp = (left / density).toInt(),
             rightDp = ceil(right / density).toInt(),
