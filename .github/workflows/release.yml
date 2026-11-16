@@ -1,0 +1,157 @@
+name: Release
+
+# Builds the APK people install and puts it on a draft GitHub release.
+#
+# Trigger: every push to main builds and (re)creates the draft release for the
+# current version (VERSION_NAME in gradle.properties), the same way VoxCtrl's
+# release workflow does. Raise the version to start a fresh release; pushes at
+# the same version refresh the draft. Publishing the draft is done by hand on
+# GitHub, and a published release is never overwritten.
+#
+# Can also be run by hand on any branch, with "publish" off, to get a signed
+# APK from this run's Artifacts without touching the releases.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Create/update the draft release. Turn OFF to just build and download the APK from this run's Artifacts."
+        required: false
+        default: true
+        type: boolean
+
+# One release build per branch at a time; a newer push cancels an older one so
+# the draft reflects the latest commit.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # to create and update GitHub releases
+
+jobs:
+  release:
+    name: Build the release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      # The release signing key. One-time setup: docs/release-signing.md.
+      KEYSTORE_BASE64: ${{ secrets.VOXKEYS_KEYSTORE_BASE64 }}
+      VOXKEYS_KEYSTORE_PASSWORD: ${{ secrets.VOXKEYS_KEYSTORE_PASSWORD }}
+      VOXKEYS_KEY_ALIAS: ${{ secrets.VOXKEYS_KEY_ALIAS }}
+      VOXKEYS_KEY_PASSWORD: ${{ secrets.VOXKEYS_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version
+        id: version
+        run: |
+          version=$(sed -n 's/^VERSION_NAME=//p' gradle.properties | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "::error file=gradle.properties::VERSION_NAME is not set."
+            exit 1
+          fi
+          if [ ! -f "docs/release-notes/$version.md" ]; then
+            echo "::error::docs/release-notes/$version.md does not exist. Every released version needs its release notes."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      # A release without the release key would be an APK nobody can update
+      # from, so the build stops here rather than fall back to another key.
+      - name: Check the signing key is set up
+        run: |
+          missing=""
+          [ -n "$KEYSTORE_BASE64" ] || missing="$missing VOXKEYS_KEYSTORE_BASE64"
+          [ -n "$VOXKEYS_KEYSTORE_PASSWORD" ] || missing="$missing VOXKEYS_KEYSTORE_PASSWORD"
+          [ -n "$VOXKEYS_KEY_ALIAS" ] || missing="$missing VOXKEYS_KEY_ALIAS"
+          [ -n "$VOXKEYS_KEY_PASSWORD" ] || missing="$missing VOXKEYS_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::The release signing key is not set up. Missing repository secrets:$missing. See docs/release-signing.md for the one-time setup."
+            {
+              echo "## No release was built"
+              echo
+              echo "The release signing key is not set up. Missing repository secrets:"
+              echo
+              for name in $missing; do echo "- \`$name\`"; done
+              echo
+              echo "The one-time setup is in [docs/release-signing.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/release-signing.md)."
+              echo "Until then, the debug APK from the CI workflow is the build to test with."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build, sign and verify
+        id: build
+        run: |
+          keystore="$RUNNER_TEMP/release-keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          VOXKEYS_KEYSTORE_FILE="$keystore" scripts/build-release.sh
+          rm -f "$keystore"
+
+      - name: Upload the APK to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoxCtrl-Keys-${{ steps.version.outputs.version }}
+          path: |
+            dist/*.apk
+            dist/*.sha256
+          if-no-files-found: error
+
+      - name: Write the release description
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA256: ${{ steps.build.outputs.sha256 }}
+          CERTIFICATE: ${{ steps.build.outputs.certificate }}
+        run: |
+          {
+            # The notes file starts with a "# VoxCtrl Keys <version>" heading,
+            # which the release already has as its title.
+            sed '1{/^# /d}' "docs/release-notes/$VERSION.md"
+            echo
+            echo "## Install"
+            echo
+            echo "Download \`VoxCtrl-Keys-$VERSION.apk\` below and open it on the phone, then follow the [setup guide](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/installation.md)."
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| SHA-256 of the APK | \`$SHA256\` |"
+            echo "| Signing certificate (SHA-256) | \`$CERTIFICATE\` |"
+            echo "| Built from | \`$GITHUB_SHA\` |"
+            echo
+            echo "How to check both: [docs/release-signing.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/release-signing.md#verifying-a-download)."
+          } > release-body.md
+          cat release-body.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create or refresh the draft release
+        if: github.event_name == 'push' || inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [ "$draft" != "true" ]; then
+              echo "::warning::Release $TAG is already published and was left as it is. Raise VERSION_NAME in gradle.properties to release this build."
+              echo "> **$TAG is already published and was not changed.** Raise \`VERSION_NAME\` to release this build. The APK is in this run's Artifacts." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            gh release upload "$TAG" dist/*.apk dist/*.sha256 --clobber
+            gh release edit "$TAG" --draft --target "$GITHUB_SHA" \
+              --title "VoxCtrl Keys $VERSION" --notes-file release-body.md
+          else
+            gh release create "$TAG" dist/*.apk dist/*.sha256 --draft --target "$GITHUB_SHA" \
+              --title "VoxCtrl Keys $VERSION" --notes-file release-body.md
+          fi

@@ -72,17 +72,21 @@ internet.
 
 ## 3. Install the app
 
-There is no store listing yet. Install the APK directly:
+There is no store listing. Install the APK directly:
 
-- **From CI:** open the latest successful run of the
-  [CI workflow](https://github.com/JRufer/voxctrl-keys/actions/workflows/ci.yml),
-  download the `voxctrl-keys-debug-apk` artifact, unzip it, and open the `.apk`
+- **A release:** download `VoxCtrl-Keys-<version>.apk` from the
+  [Releases page](https://github.com/JRufer/voxctrl-keys/releases) and open it
   on the phone (Android asks you to allow installing from that source).
+  Releases are all signed with the same key, so a newer one installs over an
+  older one and keeps your pairing. To check a download, see
+  [Verifying a download](./release-signing.md#verifying-a-download).
+- **A test build of a branch:** open a run of the
+  [CI workflow](https://github.com/JRufer/voxctrl-keys/actions/workflows/ci.yml),
+  download the `voxctrl-keys-debug-apk` artifact, unzip it, and open the
+  `.apk`. Debug builds are signed with a different key on every run, so one
+  cannot be installed over another or over a release: uninstall first, which
+  forgets the pairing.
 - **From source:** see the [Development Guide](./development.md#building).
-
-Debug builds from different CI runs are signed with different keys, so Android
-refuses to install one over another: uninstall the old one first. Uninstalling
-forgets the pairing.
 
 ## 4. Turn the keyboard on
 

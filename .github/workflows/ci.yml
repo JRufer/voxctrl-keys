@@ -38,6 +38,23 @@ jobs:
       - name: Android lint
         run: ./gradlew :app:lintDebug
 
+      # The release process itself, with a key made for this run and thrown
+      # away: the signing configuration, the build script and its signature
+      # check are exercised on every pull request, so a release does not find
+      # out on the day that they broke. Nothing from this step is published.
+      - name: Rehearse the release build
+        env:
+          VOXKEYS_KEYSTORE_FILE: ${{ runner.temp }}/rehearsal.p12
+          VOXKEYS_KEYSTORE_PASSWORD: rehearsal-only
+          VOXKEYS_KEY_ALIAS: rehearsal
+          VOXKEYS_KEY_PASSWORD: rehearsal-only
+        run: |
+          keytool -genkeypair -keystore "$VOXKEYS_KEYSTORE_FILE" -storetype PKCS12 \
+            -storepass "$VOXKEYS_KEYSTORE_PASSWORD" -keypass "$VOXKEYS_KEY_PASSWORD" \
+            -alias "$VOXKEYS_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 \
+            -dname "CN=CI rehearsal, O=not a release key"
+          scripts/build-release.sh
+
       - name: Upload the debug APK
         uses: actions/upload-artifact@v4
         with:

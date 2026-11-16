@@ -13,6 +13,7 @@
 ./gradlew :core:test          # unit tests
 ./gradlew :app:assembleDebug  # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:lintDebug      # Android lint
+scripts/build-release.sh      # the signed release APK, in dist/ (needs the signing key)
 ```
 
 Install on a connected phone with `./gradlew :app:installDebug`, or
@@ -27,7 +28,9 @@ See [Architecture](./architecture.md) for the classes. The build itself:
 | `settings.gradle.kts` | The two modules and the repositories (Google, Maven Central) |
 | `gradle/libs.versions.toml` | Every version in one place |
 | `core/build.gradle.kts` | Kotlin/JVM, JUnit 4 |
-| `app/build.gradle.kts` | Android application: `compileSdk` 36, `minSdk` 29, `versionName` |
+| `gradle.properties` | `VERSION_NAME`, the one place the version is written |
+| `app/build.gradle.kts` | Android application: `compileSdk` 36, `minSdk` 29, release signing from the environment |
+| `scripts/build-release.sh` | Builds, signs and verifies the release APK |
 
 ## Tests
 
@@ -62,6 +65,8 @@ Be precise about this when changing or releasing anything.
 |---|---|
 | `core` logic | Unit-tested, run in CI on every push and pull request |
 | The app compiles, passes lint and packages into an APK | CI |
+| The release build script signs an APK and its signature verifies | CI, with a throwaway key on every pull request |
+| The Release workflow with the real key: decoding the secret, creating and refreshing the draft release | **Not yet verified.** It cannot run until the signing key is set up |
 | The keyboard on a real phone: recording, typing into apps, live text, switching keyboards | **Not yet verified** |
 | The bar on a Galaxy Z Fold 8: cover screen, inner screen, landscape, book and tabletop postures | Layout rules unit-tested; **not yet seen on the device**. See [The Keyboard Bar](./ui.md#galaxy-z-fold-8) for the two things to look at first |
 | Against a real `voxctrl-server` | **Not yet verified.** The stand-in server in the tests is written from the server's source and documentation |
@@ -71,8 +76,13 @@ When one of these is verified, update this table.
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on pushes to `main` and on every pull request:
-core tests, the debug APK, lint. The APK and the lint report are uploaded as
-artifacts of the run. Like VoxCtrl's CI, it runs for pull requests against any
+core tests, the debug APK, lint, and a rehearsal of the release build with a
+throwaway key. The debug APK and the lint report are uploaded as artifacts of
+the run.
+
+`.github/workflows/release.yml` runs on pushes to `main` and by hand: it
+builds the signed release APK and creates or refreshes the draft GitHub
+release. See [Building and Signing Releases](./release-signing.md). Like VoxCtrl's CI, it runs for pull requests against any
 branch, so a stacked change is still built on its own.
 
 ## Conventions
@@ -97,20 +107,20 @@ branch, so a stacked change is still built on its own.
 
 ## Versioning and releases
 
-`versionName` and `versionCode` are in `app/build.gradle.kts`. For every
-change that is going to be released:
+The version is `VERSION_NAME` in `gradle.properties`, and nowhere else:
+`versionName` and `versionCode` are derived from it. For every change that is
+going to be released:
 
-1. Raise `versionName` (semantic versioning) and `versionCode` (by one).
-2. Add `docs/release-notes/<versionName>.md`.
+1. Raise `VERSION_NAME` (semantic versioning).
+2. Add `docs/release-notes/<version>.md`. The Release workflow refuses to
+   build a version without one.
 3. If the server contract changed, follow
    [Keeping in Sync with VoxCtrl](./sync-with-voxctrl.md).
 
-There is no signed release build yet. CI produces a debug APK signed with the
-runner's debug key, which differs between runs, so one CI build cannot be
-installed over another. Setting up a release keystore (kept out of the
-repository; `.gitignore` already excludes `*.jks`, `*.keystore` and
-`keystore.properties`) and a release workflow is the next step before handing
-the app to anyone else.
+Merging to `main` then builds the signed `VoxCtrl-Keys-<version>.apk` and puts
+it on a draft GitHub release, which is published by hand. The whole process,
+the signing key's one-time setup and how to build a release APK locally are in
+[Building and Signing Releases](./release-signing.md).
 
 ## Troubleshooting the build
 
