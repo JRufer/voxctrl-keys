@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VoxCtrl Keys</string>
+    <string name="keyboard_name">VoxCtrl voice keyboard</string>
+    <string name="subtype_voice">Voice</string>
+
+    <!-- The bar -->
+    <string name="tap_to_speak">Tap to speak</string>
+    <string name="set_up_server">Set up your server</string>
+    <string name="allow_microphone">Allow microphone</string>
+    <string name="finishing_up">Finishing up</string>
+    <string name="cant_reach">Can\'t reach %1$s</string>
+    <string name="cant_reach_server">Can\'t reach the server</string>
+    <string name="check_settings">Check server settings</string>
+    <string name="mic_unavailable">Microphone is in use</string>
+    <string name="nothing_heard">Didn\'t catch that</string>
+    <string name="retry">Retry</string>
+    <string name="open">Open</string>
+    <string name="switch_keyboard">Switch keyboard</string>
+    <string name="backspace">Backspace</string>
+    <string name="discard_recording">Discard this recording</string>
+    <string name="start_dictation">Start dictation</string>
+    <string name="stop_and_insert">Stop and insert text</string>
+    <string name="recording_limit">Recording limit reached</string>
+
+    <!-- Settings -->
+    <string name="section_keyboard">Keyboard</string>
+    <string name="keyboard_not_enabled">VoxCtrl voice keyboard is not turned on yet. Turn it on in the system\'s keyboard list, then choose it.</string>
+    <string name="keyboard_enabled_not_selected">The keyboard is turned on. Choose it to start dictating.</string>
+    <string name="keyboard_ready">VoxCtrl voice keyboard is your current keyboard.</string>
+    <string name="enable_keyboard">Open keyboard list</string>
+    <string name="choose_keyboard">Choose keyboard</string>
+
+    <string name="section_microphone">Microphone</string>
+    <string name="mic_granted">Microphone access is allowed. The microphone is on only between your tap to start and your tap to stop.</string>
+    <string name="mic_missing">The keyboard needs the microphone to record a dictation.</string>
+    <string name="mic_denied">Microphone access was refused. Allow it under Permissions in this app\'s system settings.</string>
+    <string name="allow">Allow</string>
+    <string name="app_settings">App settings</string>
+
+    <string name="section_server">Your VoxCtrl server</string>
+    <string name="server_intro">Dictation is transcribed by your own VoxCtrl server. On the server, run voxctrl-server --pairing-code and paste the code here. To reach the server over Tailscale, enter its tailnet name or 100.x address first: an address you enter is kept, and the code fills in the rest.</string>
+    <string name="address">Address</string>
+    <string name="address_hint">homeserver or 100.x.y.z</string>
+    <string name="pairing_code">Pairing code</string>
+    <string name="pairing_hint">vxpair_…</string>
+    <string name="pair">Pair</string>
+    <string name="api_key">API key</string>
+    <string name="api_key_hint">vx_… (filled in by pairing)</string>
+    <string name="save_and_test">Save and test</string>
+    <string name="remove_pairing">Remove pairing</string>
+    <string name="testing">Testing the connection…</string>
+    <string name="connected">Connected to %1$s. Model: %2$s. Server version %3$s.</string>
+    <string name="unknown">unknown</string>
+    <string name="server_too_old">This server is version %1$s. The keyboard needs %2$s or newer.</string>
+    <string name="not_set_up">No server set up yet.</string>
+    <string name="saved_not_tested">Saved.</string>
+    <string name="paired">Paired. The address and key are filled in.</string>
+    <string name="pairing_removed">Pairing removed. The saved certificate is forgotten.</string>
+    <string name="net_encrypted">Encrypted. Certificate %1$s</string>
+    <string name="net_tailnet">Tailscale address: the tailnet encrypts this connection.</string>
+    <string name="net_local">Local network address: audio is not encrypted on the way to the server. Fine on a network you trust. Turn on encryption on the server to protect it.</string>
+    <string name="net_public">Warning: this address is on the internet and the connection is not encrypted. Your audio and API key would be readable in transit. Use Tailscale, or turn on encryption on the server and pair again.</string>
+    <string name="net_https">HTTPS address: the connection is encrypted.</string>
+
+    <string name="section_dictation">Dictation</string>
+    <string name="live_text">Show words as I speak</string>
+    <string name="live_text_note">Sends what you have said so far to your server a few times a second. Turn it off for a slow server.</string>
+    <string name="language">Language</string>
+    <string name="language_hint">Leave empty for the server\'s setting (e.g. en)</string>
+    <string name="vocabulary">Names and jargon</string>
+    <string name="vocabulary_hint">Words to listen for, separated by commas</string>
+    <string name="mic_position">Microphone position on wide screens</string>
+    <string-array name="mic_positions">
+        <item>Left</item>
+        <item>Centre</item>
+        <item>Right</item>
+    </string-array>
+
+    <string name="section_try">Try it</string>
+    <string name="try_hint">Tap here, switch to the VoxCtrl keyboard and speak</string>
+
+    <string name="section_privacy">Privacy</string>
+    <string name="privacy_summary">This keyboard talks only to the server you enter above. It has no analytics, no crash reporting and no account. Audio is held in memory while you dictate and is never written to storage; text is typed into the app you are using and not kept. The API key is encrypted on this device and left out of backups.</string>
+    <string name="version_line">VoxCtrl Keys %1$s · client contract revision %2$d</string>
+</resources>

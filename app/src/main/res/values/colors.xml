@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The VoxCtrl palette (VoxCtrl-Website's base.css). The bar is always dark, like the desktop overlays. -->
+<resources>
+    <color name="bg_0">#0E1116</color>
+    <color name="bg_1">#14181F</color>
+    <color name="bg_2">#1A1F28</color>
+    <color name="bg_3">#232A35</color>
+    <color name="bg_4">#2D3540</color>
+    <color name="line">#2A313C</color>
+    <color name="line_2">#3A4350</color>
+    <color name="txt_0">#E8EDF3</color>
+    <color name="txt_1">#B6BFCB</color>
+    <color name="txt_2">#7E8896</color>
+    <color name="cyan_0">#22D4EF</color>
+    <color name="cyan_1">#7AE8F8</color>
+    <color name="cyan_d">#0D8EA3</color>
+    <color name="cyan_line">#6622D4EF</color>
+    <color name="warn">#FFB454</color>
+    <color name="good">#6AD48A</color>
+    <!-- Amber that reads on both the light and the dark settings background. -->
+    <color name="warn_on_surface">#B26A00</color>
+    <color name="pressed">#1FFFFFFF</color>
+</resources>
