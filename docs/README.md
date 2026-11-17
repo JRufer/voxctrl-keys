@@ -13,7 +13,8 @@ contacted.
 |---|---|
 | [Overview](./overview.md) | What the keyboard does, what it leaves to other keyboards, design principles |
 | [Installation & Setup](./installation.md) | Preparing the server, Tailscale, installing the APK, pairing, turning the keyboard on |
-| [The Keyboard Bar](./ui.md) | The bar's parts and states, layout rules, foldables, the Galaxy Z Fold 8 in every posture |
+| [The Keyboard Bar](./ui.md) | The bar's parts and states, layout rules, where the typing keyboard goes, foldables, the Galaxy Z Fold 8 in every posture |
+| [The Typing Keyboard](./typing.md) | The QWERTY keyboard under the bar: tapping, swiping, suggestions, the word list and its licence |
 | [Privacy & Security](./privacy.md) | What leaves the phone and where it goes, permissions, how to verify it |
 | [Configuration](./configuration.md) | Every setting, its default, and where it is stored |
 | [Architecture](./architecture.md) | Modules, classes, the life of a dictation, threading |
@@ -48,7 +49,7 @@ contacted.
   support library beyond `androidx.window` for fold awareness)
 - **Core:** a pure Kotlin/JVM module with no dependencies: HTTP client
   (`HttpURLConnection`), certificate pinning, pairing codes, WAV encoding,
-  layout rules
+  layout rules, the typing keyboard's keys, swipe decoder and editing rules
 - **Build:** Gradle 8.14 (wrapper), Android Gradle Plugin 8.11, min SDK 29
   (Android 10), target SDK 36
 - **Server:** VoxCtrl server 0.9.0 or newer, over its OpenAI-compatible API

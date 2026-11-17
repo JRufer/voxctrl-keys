@@ -1,16 +1,21 @@
 package ai.voxctrl.keys
 
 import ai.voxctrl.keys.core.BarLayout
+import ai.voxctrl.keys.core.KeyboardLayout
+import ai.voxctrl.keys.core.KeyboardPlacement
+import ai.voxctrl.keys.core.Typist
 import android.annotation.SuppressLint
 import android.content.res.ColorStateList
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Insets
 import android.os.Build
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.WindowInsets
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -49,16 +54,17 @@ sealed class BarState {
 }
 
 /**
- * The views of the bar: shows a [BarState], reports taps, and re-lays the row
- * out for the window it is in.
+ * The views of the keyboard: the voice bar, which shows a [BarState], and
+ * under it the typing keyboard, shown while [expanded]. Reports taps, and
+ * re-lays both out for the window they are in.
  */
 @SuppressLint("ClickableViewAccessibility")
 class KeyboardBar(
     val root: View,
     private val prefs: Prefs,
     onPill: () -> Unit,
-    onSwitch: () -> Unit,
-    onSwitchLong: () -> Unit,
+    onKeyboardButton: () -> Unit,
+    onKeyboardButtonLong: () -> Unit,
     private val onRight: () -> Unit,
     private val onBackspace: () -> Unit,
 ) {
@@ -74,6 +80,21 @@ class KeyboardBar(
     private val trailing: TextView = root.findViewById(R.id.pill_trailing)
     private val switchButton: ImageButton = root.findViewById(R.id.btn_switch)
     private val rightButton: ImageButton = root.findViewById(R.id.btn_right)
+    private val panel: FrameLayout = root.findViewById(R.id.keyboard_panel)
+    private val block: LinearLayout = root.findViewById(R.id.keyboard_block)
+    private val keysView: KeyboardView = root.findViewById(R.id.keys)
+
+    /** The suggestions strip, best in the middle: index 0 of the typist's list, then 1 on the left, 2 on the right. */
+    private val suggestionViews: List<TextView> = listOf(
+        root.findViewById(R.id.suggestion_middle),
+        root.findViewById(R.id.suggestion_left),
+        root.findViewById(R.id.suggestion_right),
+    )
+    private var typist: Typist? = null
+
+    /** True while the typing keyboard shows under the bar. */
+    var expanded = false
+        private set
 
     private val context = root.context
     private val density = context.resources.displayMetrics.density
@@ -99,10 +120,16 @@ class KeyboardBar(
         icon.clipToOutline = true
 
         pill.setOnClickListener { onPill() }
-        switchButton.setOnClickListener { onSwitch() }
+        switchButton.setOnClickListener { onKeyboardButton() }
         switchButton.setOnLongClickListener {
-            onSwitchLong()
+            onKeyboardButtonLong()
             true
+        }
+        suggestionViews.forEachIndexed { index, view ->
+            view.setOnClickListener {
+                root.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                typist?.pickSuggestion(index)
+            }
         }
         rightButton.setOnTouchListener { view, event ->
             when (event.actionMasked) {
@@ -165,6 +192,40 @@ class KeyboardBar(
             if (right - left != oldRight - oldLeft || applied == null) root.post { applyLayout() }
         }
         show(state)
+        setExpanded(false)
+    }
+
+    /** Connects the typing keyboard to the [Typist] that types for it. */
+    fun attach(typist: Typist) {
+        this.typist = typist
+        keysView.attach(typist)
+        refreshTyping()
+    }
+
+    /** Redraws the keys and the suggestions after the typist changed. */
+    fun refreshTyping() {
+        keysView.refresh()
+        val words = typist?.suggestions.orEmpty()
+        suggestionViews.forEachIndexed { index, view ->
+            val word = words.getOrNull(index)
+            view.text = word ?: ""
+            view.isEnabled = word != null && keysView.isEnabled
+            view.contentDescription = word?.let { context.getString(R.string.suggestion, it) }
+        }
+    }
+
+    /** Shows or hides the typing keyboard; the voice bar above it does not change. */
+    fun setExpanded(show: Boolean) {
+        expanded = show
+        panel.visibility = if (show) View.VISIBLE else View.GONE
+        switchButton.setBackgroundResource(if (show) R.drawable.bg_button_on else R.drawable.bg_button)
+        switchButton.imageTintList = ColorStateList.valueOf(context.getColor(if (show) R.color.cyan_0 else R.color.txt_1))
+        switchButton.contentDescription =
+            context.getString(if (show) R.string.hide_typing_keyboard else R.string.show_typing_keyboard)
+        if (show) {
+            placeKeyboard()
+            refreshTyping()
+        }
     }
 
     fun show(next: BarState) {
@@ -264,6 +325,14 @@ class KeyboardBar(
             }
         }
         if (next !is BarState.Listening) wave.clear()
+
+        // While a dictation is running, or waiting to be sent again, its live
+        // text is the field's composing text: typing would overwrite it.
+        val dictating = next is BarState.Listening || next is BarState.Finishing ||
+            (next is BarState.Unreachable && next.holdsAudio)
+        keysView.isEnabled = !dictating
+        keysView.alpha = if (dictating) 0.45f else 1f
+        refreshTyping()
     }
 
     fun pushLevel(level: Float) = wave.push(level)
@@ -305,11 +374,32 @@ class KeyboardBar(
 
     private fun formatTime(seconds: Int) = "%d:%02d".format(seconds / 60, seconds % 60)
 
+    /** Sizes and places the typing keyboard for this window and hand; see [KeyboardPlacement]. */
+    private fun placeKeyboard() {
+        val widthPx = root.width - root.paddingLeft - root.paddingRight
+        if (widthPx <= 0) return
+        val place = KeyboardPlacement.compute((widthPx / density).toInt(), prefs.hand, verticalFold())
+        val params = block.layoutParams as FrameLayout.LayoutParams
+        val width = if (place.leftDp == 0 && place.widthDp * density >= widthPx - density) {
+            FrameLayout.LayoutParams.MATCH_PARENT
+        } else {
+            (place.widthDp * density).toInt()
+        }
+        val left = (place.leftDp * density).toInt()
+        keysView.rowHeightDp = KeyboardLayout.rowHeightFor(context.resources.configuration.screenHeightDp)
+        if (params.width != width || params.leftMargin != left) {
+            params.width = width
+            params.leftMargin = left
+            block.layoutParams = params
+        }
+    }
+
     /** Sizes the pill and the spaces beside it for this window; see [BarLayout]. */
     private fun applyLayout() {
         // The row's room: the bar's width less any side insets.
         val widthPx = root.width - root.paddingLeft - root.paddingRight
         if (widthPx <= 0) return
+        if (expanded) placeKeyboard()
         val widthDp = (widthPx / density).toInt()
         val result = BarLayout.compute(widthDp, prefs.pillPosition, verticalFold())
         if (result == applied) return

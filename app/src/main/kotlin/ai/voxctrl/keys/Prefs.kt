@@ -1,6 +1,7 @@
 package ai.voxctrl.keys
 
 import ai.voxctrl.keys.core.BarLayout
+import ai.voxctrl.keys.core.KeyboardPlacement
 import ai.voxctrl.keys.core.ServerConfig
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
@@ -60,6 +61,11 @@ class Prefs(context: Context) {
         }
         set(value) = prefs.edit().putString(PILL_POSITION, value.name.lowercase()).apply()
 
+    /** Which edge the typing keyboard sits against on a wide screen. Order matches the settings' list. */
+    var hand: KeyboardPlacement.Hand
+        get() = if (prefs.getString(HAND, null) == "left") KeyboardPlacement.Hand.LEFT else KeyboardPlacement.Hand.RIGHT
+        set(value) = prefs.edit().putString(HAND, value.name.lowercase()).apply()
+
     fun serverConfig() = ServerConfig(endpoint, apiKey, fingerprint)
 
     private fun secretKey(): SecretKey {
@@ -106,6 +112,7 @@ class Prefs(context: Context) {
         const val LANGUAGE = "language"
         const val VOCABULARY = "vocabulary"
         const val PILL_POSITION = "pill_position"
+        const val HAND = "keyboard_hand"
 
         const val KEYSTORE = "AndroidKeyStore"
         const val KEY_ALIAS = "voxctrl_keys_api_key"

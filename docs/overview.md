@@ -1,8 +1,9 @@
 # Overview
 
 VoxCtrl Keys puts VoxCtrl's dictation on a phone without putting a speech
-model on the phone. It is an Android keyboard (an "input method") whose whole
-interface is one short bar with a microphone button.
+model on the phone. It is an Android keyboard (an "input method") that opens
+as one short bar with a microphone button, with a typing keyboard tucked
+behind a button for the words you would rather type.
 
 ## What it does
 
@@ -17,14 +18,19 @@ interface is one short bar with a microphone button.
   typing keyboard, so the app you are dictating into keeps the screen.
 - **Tells you where your voice goes.** The bar always shows the server's name
   and whether it is reachable.
+- **Types too, when asked.** The keyboard button at the left of the bar shows
+  a QWERTY keyboard with swipe typing and suggestions under it, and hides it
+  again. On a wide screen it is a phone-sized block under your right or left
+  thumb. See [The Typing Keyboard](./typing.md).
 - **Survives a dropped connection.** If the server does not answer when you
   stop, the recording is kept in memory and **Retry** sends it again.
 
 ## What it deliberately does not do
 
-- **No typing.** There are no letter keys. The button on the left switches to
-  your previous keyboard, and holding it opens the system's keyboard picker.
-  The one key it has is backspace, for fixing a wrong word without switching.
+- **No full-featured typing.** The typing keyboard is English QWERTY with
+  swipe and suggestions from a fixed word list. There is no autocorrect, no
+  learning, no other languages and no emoji; for those, switch to another
+  keyboard (hold the keyboard button for the picker).
 - **No on-device recognition.** With no server there is no dictation. A local
   fallback model, as the desktop app has, is not part of this version.
 - **No cleanup, AI processing or text-to-speech.** The server offers these to
@@ -39,12 +45,15 @@ interface is one short bar with a microphone button.
 1. **Privacy first.** One network destination, chosen by the user. Audio in
    memory only. No text kept. Secrets encrypted and excluded from backups.
 2. **A thin client.** Anything that can live on the server does. The phone's
-   job is the microphone, the bar and typing the result.
+   job is the microphone, the bar and typing the result. The typing keyboard
+   is the exception that needs no server: it works offline, from a bundled
+   word list.
 3. **Speak the server's existing protocol.** The keyboard uses the same
    OpenAI-compatible endpoints as the desktop app and adds nothing to the
    server. The contract is written down in [Server Protocol](./protocol.md).
 4. **Short and predictable.** One row, one primary action, the same three
-   positions in every state and on every screen.
+   positions in every state and on every screen. The typing keyboard adds to
+   the screen only when asked, and never changes the bar above it.
 5. **Testable without a phone.** Everything that is not an Android API call
    lives in the `core` module and is unit-tested on the JVM, including the
    bar's layout on foldables.

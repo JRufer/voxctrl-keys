@@ -24,6 +24,7 @@ a phone keyboard has no convenient place for one, and the settings are few.
 | **Language** | empty | A language code (`en`, `de`, …) sent with each request. Empty uses the server's own setting. Only whisper.cpp models honour it |
 | **Names and jargon** | empty | Words to bias recognition toward, sent as the request's `prompt`. Separate them with commas |
 | **Microphone position on wide screens** | Centre | Where the microphone pill sits when the keyboard is 600 dp or wider: Left, Centre or Right. See [The Keyboard Bar](./ui.md#layout-rules) |
+| **Typing keyboard on wide screens** | Right-handed | Which edge the typing keyboard sits against when the keyboard is 600 dp or wider: Right-handed or Left-handed. Narrower screens always get a full-width keyboard. See [The Keyboard Bar](./ui.md#the-typing-keyboard) |
 
 Language, names and jargon save when you leave the field or the screen; the
 rest save as you change them.
@@ -44,6 +45,12 @@ that a behaviour can be traced to its number.
 | 0.8 s / 0.6 s / 45 s | `LiveClips` | Live text: first clip, least new audio between clips, and where it stops updating |
 | 600 dp / 420 dp / 360 dp | `BarLayout` | Wide-layout threshold, widest pill, narrowest bar that shows the server name |
 | 0.9.0 | `Compatibility.MIN_SERVER_VERSION` | Oldest server the keyboard accepts |
+| 440 dp / 260 dp / 10 dp / 12 dp | `KeyboardPlacement` | Typing keyboard on a wide screen: widest, narrowest, gap to the screen's edge, gap to a bent fold |
+| 52 dp / 42 dp / 500 dp | `KeyboardLayout` | Key row height, on a short screen, and what counts as short |
+| 0.45 key | `KeyboardView.SWIPE_START` | How far a finger moves before a touch is a swipe |
+| 0.4 s / 0.4 s, then 50 ms | `Typist.DOUBLE_TAP_MS`, `KeyboardView` | Double-tap Shift for caps lock; Delete starts repeating, then repeats every |
+| 3 | `Typist.SUGGESTIONS` | Places in the suggestions strip |
+| 50,000 | `words_en.txt` | Words the typing keyboard knows |
 
 ## Where settings are stored
 
@@ -57,6 +64,7 @@ In the app's private shared preferences, file `voxctrl_keys`:
 | `live_text` | boolean |
 | `language`, `vocabulary` | strings |
 | `pill_position` | `left`, `center` or `right` |
+| `keyboard_hand` | `right` or `left` |
 
 None of it is backed up or transferred to a new device. See
 [Privacy & Security](./privacy.md#what-is-stored-on-the-phone).

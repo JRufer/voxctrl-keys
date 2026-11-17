@@ -6,7 +6,7 @@ VoxCtrl server transcribes, and the words are typed into whatever app you are
 using. No cloud service is involved, and the keyboard talks to nothing but the
 server you point it at.
 
-The keyboard is a single short bar with one job:
+The keyboard opens as a single short bar with one job:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -16,10 +16,14 @@ The keyboard is a single short bar with one job:
 
 Tap the microphone, speak, tap again. Your words appear in the text field as
 you say them and are replaced by the final transcript when you stop. The button
-on the left switches back to your typing keyboard.
+on the left shows a full QWERTY keyboard with swipe typing under the bar, and
+hides it again; the keyboard always opens with it hidden. On a wide screen,
+such as an unfolded phone, it sits under your right or left thumb, as set in
+the settings.
 
-> **Status: 0.1.0, first implementation.** It builds and its logic is tested
-> in CI, but it has not yet been run on a phone. See
+> **Status: 0.2.0.** Dictation has been seen working on a Galaxy Z Fold 8
+> (0.1.0). The typing keyboard (0.2.0) builds and its logic is tested in CI,
+> but it has not yet been run on a phone. See
 > [what is and is not verified](docs/development.md#what-is-verified).
 
 ## What you need
@@ -49,6 +53,7 @@ Everything is in [`docs/`](docs/README.md):
 | [Overview](docs/overview.md) | What it is, what it does and does not do |
 | [Installation & setup](docs/installation.md) | Server, Tailscale, pairing, turning the keyboard on |
 | [The keyboard bar](docs/ui.md) | States, layout, foldables and the Galaxy Z Fold 8 |
+| [The typing keyboard](docs/typing.md) | Tapping, swiping, suggestions, the word list |
 | [Privacy & security](docs/privacy.md) | Exactly what leaves the phone, and where it goes |
 | [Configuration](docs/configuration.md) | Every setting and where it is stored |
 | [Architecture](docs/architecture.md) | Modules, data flow, threading |
@@ -62,10 +67,10 @@ Everything is in [`docs/`](docs/README.md):
 ```
 voxctrl-keys/
 ├── app/      # The Android app: the keyboard service, the bar, the settings screen
-├── core/     # Plain Kotlin, no Android: server client, pairing codes, layout rules. Unit-tested on the JVM
+├── core/     # Plain Kotlin, no Android: server client, pairing codes, layout rules, swipe decoding. Unit-tested on the JVM
 ├── docs/     # Documentation (kept accurate with the code; see docs/development.md)
 ├── assets/   # The VoxCtrl icon
-├── scripts/  # build-release.sh: the signed release APK
+├── scripts/  # build-release.sh: the signed release APK; build-wordlist.py: the typing keyboard's word list
 └── .github/  # CI (tests, debug APK, lint) and the Release workflow
 ```
 

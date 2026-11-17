@@ -17,6 +17,19 @@
     <string name="retry">Retry</string>
     <string name="open">Open</string>
     <string name="switch_keyboard">Switch keyboard</string>
+    <string name="show_typing_keyboard">Show typing keyboard</string>
+    <string name="hide_typing_keyboard">Hide typing keyboard</string>
+    <string name="key_shift">Shift</string>
+    <string name="key_shift_on">Shift on</string>
+    <string name="key_caps_lock">Caps lock on</string>
+    <string name="key_delete">Delete</string>
+    <string name="key_space">Space</string>
+    <string name="key_enter">Enter</string>
+    <string name="key_symbols">Symbols</string>
+    <string name="key_letters">Letters</string>
+    <string name="key_more_symbols">More symbols</string>
+    <string name="space_label">English</string>
+    <string name="suggestion">Suggestion: %1$s</string>
     <string name="backspace">Backspace</string>
     <string name="discard_recording">Discard this recording</string>
     <string name="start_dictation">Start dictation</string>
@@ -79,6 +92,12 @@
         <item>Centre</item>
         <item>Right</item>
     </string-array>
+    <string name="keyboard_hand">Typing keyboard on wide screens</string>
+    <string-array name="keyboard_hands">
+        <item>Right-handed</item>
+        <item>Left-handed</item>
+    </string-array>
+    <string name="keyboard_hand_note">On a wide screen, such as an unfolded phone, the typing keyboard is narrower than the screen and sits under one thumb. Tap the keyboard button on the left of the bar to show or hide it.</string>
 
     <string name="section_try">Try it</string>
     <string name="try_hint">Tap here, switch to the VoxCtrl keyboard and speak</string>
