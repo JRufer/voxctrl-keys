@@ -248,7 +248,9 @@ class SettingsActivity : Activity() {
             val message = try {
                 val info = ServerClient(config).probe()
                 val unknown = getString(R.string.unknown)
-                if (!Compatibility.supports(info.version)) {
+                if (!Compatibility.speaks(info.contract)) {
+                    getString(R.string.keyboard_too_old, info.version ?: unknown)
+                } else if (!Compatibility.supports(info.version)) {
                     getString(R.string.server_too_old, info.version ?: unknown, Compatibility.MIN_SERVER_VERSION)
                 } else {
                     getString(

@@ -42,6 +42,16 @@ enum class Failure {
 
     /** The server answered with an error of its own; the message is the server's. */
     SERVER_ERROR,
+
+    /**
+     * The server is up but has too much queued (HTTP 503): nothing was run, so
+     * the same recording can be sent again in a moment. VoxCtrl 0.9.20 and
+     * newer answer a dictation this way when 8 are already waiting.
+     */
+    BUSY,
+
+    /** The server speaks a newer client contract than this keyboard: update the keyboard. */
+    INCOMPATIBLE,
 }
 
 class ServerException(val failure: Failure, message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -52,6 +62,12 @@ data class ServerInfo(
     val model: String?,
     val cleanup: Boolean,
     val tts: Boolean,
+    /**
+     * The client contract revision the server speaks (`contract` in
+     * `/health`, from VoxCtrl 0.9.19). Null from an older server, which
+     * speaks revision 1. See [Compatibility.speaks].
+     */
+    val contract: Int? = null,
 )
 
 /**
@@ -84,6 +100,7 @@ class ServerClient(
             model = model,
             cleanup = fields?.get("cleanup") == true,
             tts = fields?.get("tts") == true,
+            contract = (fields?.get("contract") as? Double)?.toInt(),
         )
     }
 
@@ -91,8 +108,14 @@ class ServerClient(
      * Transcribes a WAV file (16 kHz mono 16-bit PCM) and returns the text.
      * [prompt] biases recognition toward the words in it; [language] is a
      * language code, honoured by whisper.cpp models only.
+     *
+     * [live] marks a live-text clip of a recording still in progress. It is
+     * sent as `X-VoxCtrl-Purpose: live`, so a VoxCtrl server (0.9.20 and
+     * newer) runs it only when it has nothing else to do and otherwise
+     * answers 503 at once: a live clip never makes anyone's dictation wait.
+     * Older servers ignore the header.
      */
-    fun transcribe(wav: ByteArray, prompt: String? = null, language: String? = null): String {
+    fun transcribe(wav: ByteArray, prompt: String? = null, language: String? = null, live: Boolean = false): String {
         requireUsable()
         val boundary = "voxctrlkeys" + java.lang.Long.toHexString(System.nanoTime())
         val body = ByteArrayOutputStream(wav.size + 512)
@@ -115,6 +138,7 @@ class ServerClient(
             withKey = true,
             contentType = "multipart/form-data; boundary=$boundary",
             payload = body.toByteArray(),
+            headers = if (live) mapOf(PURPOSE_HEADER to PURPOSE_LIVE) else emptyMap(),
         )
         if (response.status != 200) throw errorFor(response)
         val text = Json.parseObject(response.body)?.get("text") as? String
@@ -141,7 +165,14 @@ class ServerClient(
 
     private fun get(url: String, withKey: Boolean): Response = send(url, "GET", withKey, null, null)
 
-    private fun send(url: String, method: String, withKey: Boolean, contentType: String?, payload: ByteArray?): Response {
+    private fun send(
+        url: String,
+        method: String,
+        withKey: Boolean,
+        contentType: String?,
+        payload: ByteArray?,
+        headers: Map<String, String> = emptyMap(),
+    ): Response {
         val connection = try {
             URI(url).toURL().openConnection() as HttpURLConnection
         } catch (e: Exception) {
@@ -158,6 +189,7 @@ class ServerClient(
             if (withKey && !config.apiKey.isNullOrBlank()) {
                 connection.setRequestProperty("Authorization", "Bearer ${config.apiKey}")
             }
+            for ((name, value) in headers) connection.setRequestProperty(name, value)
             val pin = config.fingerprint?.takeIf { it.isNotBlank() }
             if (pin != null && connection is HttpsURLConnection) {
                 connection.sslSocketFactory = pinnedContext(pin).socketFactory
@@ -197,6 +229,7 @@ class ServerClient(
                 Failure.UNAUTHORIZED,
                 message ?: "The API key was not accepted. Paste the server's pairing code again.",
             )
+            503 -> ServerException(Failure.BUSY, message ?: "The server is busy. Try again in a moment.")
             else -> ServerException(Failure.SERVER_ERROR, message ?: "The server answered with an error (HTTP ${response.status}).")
         }
     }
@@ -214,6 +247,10 @@ class ServerClient(
         const val CONNECT_TIMEOUT_MS = 4_000
         const val READ_TIMEOUT_MS = 30_000
         const val USER_AGENT = "voxctrl-keys"
+
+        /** What a transcription request is for; see [transcribe]. */
+        const val PURPOSE_HEADER = "X-VoxCtrl-Purpose"
+        const val PURPOSE_LIVE = "live"
 
         const val CERTIFICATE_MISMATCH = "the server's certificate is not the one this app was paired with"
         const val CERTIFICATE_MISMATCH_HELP =

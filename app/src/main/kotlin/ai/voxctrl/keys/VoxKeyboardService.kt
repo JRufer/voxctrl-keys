@@ -1,5 +1,6 @@
 package ai.voxctrl.keys
 
+import ai.voxctrl.keys.core.Compatibility
 import ai.voxctrl.keys.core.Endpoint
 import ai.voxctrl.keys.core.Failure
 import ai.voxctrl.keys.core.LiveClips
@@ -201,9 +202,12 @@ class VoxKeyboardService : InputMethodService() {
         val language = prefs.language
         network.execute {
             val text = try {
-                client.transcribe(wav, prompt, language)
+                client.transcribe(wav, prompt, language, live = true)
             } catch (_: Exception) {
-                null // live text is a preview; the final upload reports problems
+                // Live text is a preview; the final upload reports problems. A
+                // busy server (503) skipped this clip on purpose: the next one
+                // carries more of the recording anyway.
+                null
             }
             main.post {
                 if (session != generation) return@post
@@ -252,6 +256,12 @@ class VoxKeyboardService : InputMethodService() {
                         heldAudio = wav
                         online = false
                         show(BarState.Unreachable(serverName(), holdsAudio = true))
+                    }
+                    outcome is ServerException && outcome.failure == Failure.BUSY -> {
+                        // Nothing was run: the same recording can go again in a
+                        // moment. The server is up, so this is not "offline".
+                        heldAudio = wav
+                        show(BarState.Unreachable(serverName(), holdsAudio = true, label = getString(R.string.server_busy)))
                     }
                     outcome is ServerException -> {
                         heldAudio = null
@@ -327,8 +337,12 @@ class VoxKeyboardService : InputMethodService() {
         lastProbeAt = now
         network.execute {
             val failure: ServerException? = try {
-                ServerClient(config, readTimeoutMs = PROBE_READ_TIMEOUT_MS).probe()
-                null
+                val info = ServerClient(config, readTimeoutMs = PROBE_READ_TIMEOUT_MS).probe()
+                if (Compatibility.speaks(info.contract)) {
+                    null
+                } else {
+                    ServerException(Failure.INCOMPATIBLE, getString(R.string.keyboard_too_old, info.version ?: ""))
+                }
             } catch (e: ServerException) {
                 e
             } catch (e: Exception) {
@@ -355,6 +369,7 @@ class VoxKeyboardService : InputMethodService() {
     private fun problemFor(failure: ServerException): BarState = when (failure.failure) {
         Failure.NOT_CONFIGURED -> BarState.Setup
         Failure.UNREACHABLE -> BarState.Unreachable(serverName(), holdsAudio = false)
+        Failure.INCOMPATIBLE -> BarState.Problem(getString(R.string.update_keyboard))
         else -> BarState.Problem(getString(R.string.check_settings))
     }
 

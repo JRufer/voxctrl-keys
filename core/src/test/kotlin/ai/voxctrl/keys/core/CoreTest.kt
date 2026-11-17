@@ -190,6 +190,13 @@ class CompatibilityTest {
         assertTrue(Compatibility.supports(null))
         assertTrue(Compatibility.supports("nightly"))
     }
+
+    @Test
+    fun speaksContractRevisionOneAndWhatCameBeforeIt() {
+        assertTrue(Compatibility.speaks(null)) // a server from before 0.9.19
+        assertTrue(Compatibility.speaks(1))
+        assertFalse(Compatibility.speaks(Compatibility.PROTOCOL_REVISION + 1))
+    }
 }
 
 class TextJoinerTest {

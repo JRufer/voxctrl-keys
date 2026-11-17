@@ -53,6 +53,9 @@
     <string name="connected">Connected to %1$s. Model: %2$s. Server version %3$s.</string>
     <string name="unknown">unknown</string>
     <string name="server_too_old">This server is version %1$s. The keyboard needs %2$s or newer.</string>
+    <string name="keyboard_too_old">This server (VoxCtrl %1$s) talks to apps in a newer way than this keyboard understands. Update VoxCtrl Keys.</string>
+    <string name="update_keyboard">Update VoxCtrl Keys</string>
+    <string name="server_busy">Server busy</string>
     <string name="not_set_up">No server set up yet.</string>
     <string name="saved_not_tested">Saved.</string>
     <string name="paired">Paired. The address and key are filled in.</string>

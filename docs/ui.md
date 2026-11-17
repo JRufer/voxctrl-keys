@@ -64,8 +64,8 @@ failed, grey before the first answer.
 | **Idle** | Icon, "Tap to speak", `● server` | Starts recording | Backspace |
 | **Listening** | Stop square, moving waveform, timer; cyan outline | Stops and sends the recording | **Discard** |
 | **Finishing** | Spinner, "Finishing up" | Nothing (disabled) | Backspace |
-| **Unreachable** | Offline glyph, "Can't reach *server*", `Retry`; dashed outline | Sends the held recording again, or re-checks the server if none is held | **Discard** if a recording is held, otherwise backspace |
-| **Problem** | Greyed icon, "Check server settings", `Open` | Opens the settings | Backspace |
+| **Unreachable** | Offline glyph, "Can't reach *server*", `Retry`; dashed outline. "Server busy" instead when the server was up but had too many dictations waiting (HTTP 503) | Sends the held recording again, or re-checks the server if none is held | **Discard** if a recording is held, otherwise backspace |
+| **Problem** | Greyed icon, "Check server settings", `Open`. "Update VoxCtrl Keys" when the server speaks a newer client contract | Opens the settings | Backspace |
 | **Notice** | A short message ("Didn't catch that", "Microphone is in use") for 1.6 s | Nothing | Backspace |
 
 Transitions worth knowing:

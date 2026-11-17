@@ -37,14 +37,21 @@ this page (and probably the code) has a bug. See
 
 | Request | Key | Used for | Relies on |
 |---|---|---|---|
-| `GET /health` | No | Status dot; version check | JSON object. `version` (string), `model` (string), `cleanup`, `tts` (booleans). All optional to the keyboard |
+| `GET /health` | No | Status dot; version check | JSON object. `version` (string), `model` (string), `cleanup`, `tts` (booleans), `contract` (number, from server 0.9.19). All optional to the keyboard |
 | `GET /v1/models` | Yes | Proving the key is accepted | Status 200 means accepted; 401 means refused. `data[0].id` is used as the model name if `/health` gave none |
-| `POST /v1/audio/transcriptions` | Yes | Live text and the final transcript | Status 200 with a JSON object whose `text` is a string |
+| `POST /v1/audio/transcriptions` | Yes | Live text and the final transcript | Status 200 with a JSON object whose `text` is a string. Live clips carry `X-VoxCtrl-Purpose: live` |
 
 Minimum server version: **0.9.0** (`Compatibility.MIN_SERVER_VERSION`), the
 first release with `voxctrl-server`. A server whose `/health` reports an older
 version is refused in the settings; one that reports no readable version is
 accepted.
+
+**Contract revision.** From 0.9.19 a server's `/health` also reports
+`contract`, the [client contract revision](https://github.com/JRufer/VoxCtrl/blob/master/docs/clients.md#client-contract-revisions)
+it speaks. One higher than `Compatibility.PROTOCOL_REVISION` means the server
+has changed something the keyboard relies on: the settings say to update the
+keyboard, and the bar shows **Update VoxCtrl Keys** (`INCOMPATIBLE`). No
+`contract` means revision 1.
 
 ## Addresses
 
@@ -84,10 +91,13 @@ GET /health
 ```
 
 ```json
-{"status":"ok","version":"0.9.18","model":"parakeet/tdt-0.6b-v3","cleanup":false,"tts":true,"llm":false}
+{"status":"ok","version":"0.9.20","contract":1,"min_client":"0.9.0","model":"parakeet/tdt-0.6b-v3","cleanup":false,"tts":true,"llm":false}
 ```
 
-The keyboard reads `version` and `model` for the settings screen. A non-200
+The keyboard reads `version` and `model` for the settings screen, and
+`contract` for the compatibility check above. `min_client` names the oldest
+VoxCtrl *desktop app* the server works with; the keyboard has its own version
+numbers and does not read it. A non-200
 answer or a body that is not a JSON object is not an error by itself: the
 check goes on to `/v1/models`, so an OpenAI-compatible server without
 `/health` still passes.
@@ -119,6 +129,9 @@ does not use chunked transfer).
 
 `model` is not sent; the server ignores it.
 
+**Header.** A live-text clip carries `X-VoxCtrl-Purpose: live`; the final
+upload carries no such header. See [Live text](#live-text).
+
 **Audio.** A complete WAV file: RIFF header, PCM format tag 1, **16 kHz, mono,
 16-bit**, little-endian. This is what the desktop app sends and what the
 server accepts without converting. At most five minutes, about 9.6 MB, against
@@ -147,6 +160,8 @@ its errors:
 | Status | The keyboard treats it as | Shown |
 |---|---|---|
 | 401, 403 | `UNAUTHORIZED` | `error.message`, or a default asking to pair again |
+| 503 | `BUSY` | On the final upload, **Server busy** with Retry: the recording is kept and nothing was run. On a live clip, ignored |
+| 426 | `SERVER_ERROR` | `error.message`: an encrypted server asked over plain HTTP says to paste its pairing code |
 | Any other non-200 | `SERVER_ERROR` | `error.message`, or "The server answered with an error (HTTP *n*)" |
 | No answer, refused connection, timeout | `UNREACHABLE` | "Can't reach *server*" with Retry |
 | TLS failure caused by a certificate other than the pinned one | `CERTIFICATE_MISMATCH` | An explanation and a request to pair again |
@@ -169,9 +184,14 @@ app's live text with a remote engine.
   (or failure) has arrived, so the rate follows the server's speed.
 - After 45 s of continuous recording no more live clips are sent.
 - A failed live request is ignored. Only the final upload reports errors.
-- The final upload queues behind a live clip still in flight.
-
-To the server these are ordinary transcription requests of growing length.
+- Each live clip carries `X-VoxCtrl-Purpose: live`. A VoxCtrl server 0.9.20
+  or newer runs it only when its model is free and no dictation is waiting,
+  and otherwise answers `503` at once without running it. The keyboard
+  ignores that like any failed live clip and sends the next one when it is
+  due, so a live clip never delays anyone's dictation, and the final upload
+  waits behind at most the one clip already running.
+- Servers before 0.9.20 ignore the header and treat live clips as ordinary
+  transcriptions, so the final upload may queue behind a clip still running.
 
 ## Pairing codes
 
