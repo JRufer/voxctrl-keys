@@ -13,9 +13,10 @@ is in [The Keyboard Bar](./ui.md#the-typing-keyboard).
 5. [Suggestions](#suggestions)
 6. [Fields that are not for words](#fields-that-are-not-for-words)
 7. [Typing and dictating together](#typing-and-dictating-together)
-8. [The word list](#the-word-list)
-9. [What is not there yet](#what-is-not-there-yet)
-10. [Where this lives in the code](#where-this-lives-in-the-code)
+8. [Touch feedback](#touch-feedback)
+9. [The word list](#the-word-list)
+10. [What is not there yet](#what-is-not-there-yet)
+11. [Where this lives in the code](#where-this-lives-in-the-code)
 
 ---
 
@@ -81,6 +82,14 @@ letter, filled with a bar under it for caps lock.
 Put a finger on the first letter of a word, slide through the others without
 lifting, and lift on the last. The swipe draws a cyan trail.
 
+**The trail is smoothed for drawing only.** It takes a point every 4 dp along
+the finger's path (evenly spaced, however fast the screen reports the finger),
+averages each with its two neighbours on either side, and curves through them
+(quadratic Béziers through the midpoints). Screen jitter disappears, corners
+are rounded by only a few dp so the line still reaches every letter, and the
+line ends exactly under the finger. The decoder reads the raw touch points,
+not the drawn line, so smoothing does not change which word is typed.
+
 - A finger counts as swiping once it has moved about half a key's width from
   where it went down, and only if it went down on a letter.
 - **The best word is typed underlined**, with a space before it when it follows
@@ -144,6 +153,23 @@ it, remembered or learned from.
 - The bar's own backspace button (right end) works like the ⌫ key, and still
   becomes **Discard** while a dictation is held.
 
+## Touch feedback
+
+Every key, suggestion and bar button gives one firm click when touched: a key
+when the finger goes down, so a swipe clicks once at its start. It is
+Android's heavy click (`VibrationEffect.EFFECT_HEAVY_CLICK`), the platform's
+stronger version of the click that its key-tap feedback plays, sent to the
+vibrator directly (`Haptics`). Android gives an app no way to turn its
+standard key tap up, which is why the keyboard plays its own.
+
+It is played as touch feedback, so the phone's own settings still rule it: on
+Android 13 and newer the system applies its touch-vibration switch and
+intensity; before that the keyboard checks the **Touch feedback** switch
+itself. It needs the `VIBRATE` permission, granted at install.
+
+How strong a heavy click feels is the phone maker's tuning, so "stronger"
+cannot be given as a number. It has not been felt on a phone yet.
+
 ## The word list
 
 `app/src/main/assets/words_en.txt`: the 50,000 most common English words, one
@@ -196,7 +222,8 @@ the committed list, so a change to it is tested like a change to the code.
 | `core/.../WordList.kt` | Reading the word list, completions |
 | `core/.../Typist.kt` | What each tap, swipe and suggestion does to the field; shift; pages |
 | `core/.../KeyboardPlacement.kt` | Width and side of the keyboard; see [The Keyboard Bar](./ui.md#the-typing-keyboard) |
-| `app/.../KeyboardView.kt` | Drawing the keys and the trail, touches, screen-reader support |
+| `app/.../KeyboardView.kt` | Drawing the keys and the smoothed trail, touches, screen-reader support |
+| `app/.../Haptics.kt` | The click on every key and button |
 | `app/.../KeyboardBar.kt` | Showing and hiding, placing, the suggestions strip |
 | `app/.../VoxKeyboardService.kt` | The toggle, the field (`FieldEditor`), field types, loading the list |
 | `core/src/test/.../KeyboardLayoutTest.kt`, `SwipeDecoderTest.kt`, `TypistTest.kt` | The tests |

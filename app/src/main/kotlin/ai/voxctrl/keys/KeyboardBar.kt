@@ -10,7 +10,6 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Insets
 import android.os.Build
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
@@ -62,6 +61,7 @@ sealed class BarState {
 class KeyboardBar(
     val root: View,
     private val prefs: Prefs,
+    private val haptics: Haptics,
     onPill: () -> Unit,
     onKeyboardButton: () -> Unit,
     onKeyboardButtonLong: () -> Unit,
@@ -127,7 +127,7 @@ class KeyboardBar(
         }
         suggestionViews.forEachIndexed { index, view ->
             view.setOnClickListener {
-                root.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                haptics.tap()
                 typist?.pickSuggestion(index)
             }
         }
@@ -198,7 +198,7 @@ class KeyboardBar(
     /** Connects the typing keyboard to the [Typist] that types for it. */
     fun attach(typist: Typist) {
         this.typist = typist
-        keysView.attach(typist)
+        keysView.attach(typist, haptics)
         refreshTyping()
     }
 

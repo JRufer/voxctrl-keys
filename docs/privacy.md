@@ -91,6 +91,7 @@ tap the X, when the keyboard is hidden, or when the app's process ends.
 |---|---|
 | `RECORD_AUDIO` | To record a dictation |
 | `INTERNET` | To reach your server. Android has no narrower permission for "one host" |
+| `VIBRATE` | The keys' touch feedback, which is a stronger click than Android's own key tap (see [The Typing Keyboard](./typing.md#touch-feedback)). Granted at install, with no prompt |
 
 That is the whole list. There is no storage, contacts, location, notification
 or boot permission, and no foreground or background service besides the

@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- To record a dictation, only between a tap on the microphone and the tap that ends it. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- For the keys' touch feedback, which is stronger than the system's key tap. Granted at install; no prompt. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
 

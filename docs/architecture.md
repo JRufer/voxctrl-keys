@@ -31,6 +31,7 @@ voxctrl-keys/
         │   ├── VoxKeyboardService.kt   # The InputMethodService: taps, the dictation, typing the result, the field for the Typist
         │   ├── KeyboardBar.kt          # BarState and the views that show it; showing and placing the typing keyboard
         │   ├── KeyboardView.kt         # The typing keyboard's keys: drawing, touches, swipes, TalkBack
+        │   ├── Haptics.kt              # The click on every key and button
         │   ├── Recorder.kt             # AudioRecord into a memory buffer
         │   ├── WaveformView.kt         # The moving bars while listening
         │   ├── FoldWatcher.kt          # Fold and posture, via androidx.window

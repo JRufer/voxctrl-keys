@@ -19,7 +19,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.text.InputType
-import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -44,6 +43,7 @@ import java.util.concurrent.Executors
  */
 class VoxKeyboardService : InputMethodService() {
     private lateinit var prefs: Prefs
+    private lateinit var haptics: Haptics
     private val main = Handler(Looper.getMainLooper())
 
     /** One thread: requests to the server run one at a time, as the server handles them. */
@@ -80,6 +80,7 @@ class VoxKeyboardService : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        haptics = Haptics(this)
         typist.onChange = { bar?.refreshTyping() }
         // About 50,000 lines: read off the main thread so the keyboard appears at once.
         Thread({
@@ -97,6 +98,7 @@ class VoxKeyboardService : InputMethodService() {
         val created = KeyboardBar(
             root = view,
             prefs = prefs,
+            haptics = haptics,
             onPill = ::onPillTapped,
             onKeyboardButton = ::toggleTyping,
             onKeyboardButtonLong = ::showKeyboardPicker,
@@ -564,9 +566,7 @@ class VoxKeyboardService : InputMethodService() {
         )
     }
 
-    private fun haptic() {
-        bar?.root?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-    }
+    private fun haptic() = haptics.tap()
 
     private companion object {
         /** Shorter than this is a mis-tap: a third of a second. */

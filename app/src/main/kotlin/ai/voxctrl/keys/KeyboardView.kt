@@ -10,6 +10,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
@@ -17,7 +18,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.AttributeSet
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
@@ -33,6 +33,7 @@ import kotlin.math.hypot
 class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     private val density = resources.displayMetrics.density
     private var typist: Typist? = null
+    private var haptics: Haptics? = null
 
     /** Row height in dp: shorter on a short screen. Set by [KeyboardBar]. */
     var rowHeightDp: Float = KeyboardLayout.ROW_DP
@@ -71,8 +72,16 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
     private var downX = 0f
     private var downY = 0f
     private var swiping = false
+    /** The swipe as the finger sent it, in dp: what the decoder reads. */
     private val points = ArrayList<SwipeDecoder.Point>()
+
+    /** The swipe as it is drawn, in px: thinned out to one point every few dp; see [addPoint]. */
+    private val drawn = ArrayList<PointF>()
+    private val smoothed = ArrayList<PointF>()
+    private var fingerX = 0f
+    private var fingerY = 0f
     private val trail = Path()
+    private val trailStep = TRAIL_STEP_DP * density
 
     private val repeatDelete = object : Runnable {
         override fun run() {
@@ -81,8 +90,9 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
         }
     }
 
-    fun attach(typist: Typist) {
+    fun attach(typist: Typist, haptics: Haptics) {
         this.typist = typist
+        this.haptics = haptics
         refresh()
     }
 
@@ -133,7 +143,10 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
             canvas.drawRoundRect(rect, radius, radius, keyPaint)
             drawFace(canvas, key, shift)
         }
-        if (swiping) canvas.drawPath(trail, trailPaint)
+        if (swiping) {
+            buildTrail()
+            canvas.drawPath(trail, trailPaint)
+        }
     }
 
     private fun drawFace(canvas: Canvas, key: KeyboardLayout.Key, shift: Typist.Shift) {
@@ -196,9 +209,11 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
                 downKey = key
                 points.clear()
                 points += SwipeDecoder.Point(downX / density, downY / density)
-                trail.reset()
-                trail.moveTo(downX, downY)
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                drawn.clear()
+                drawn += PointF(downX, downY)
+                fingerX = downX
+                fingerY = downY
+                haptics?.tap()
                 if (key.kind == Kind.DELETE) {
                     typist?.tapDelete()
                     postDelayed(repeatDelete, REPEAT_START_MS)
@@ -230,7 +245,59 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     private fun addPoint(x: Float, y: Float) {
         points += SwipeDecoder.Point(x / density, y / density)
-        trail.lineTo(x, y)
+        fingerX = x
+        fingerY = y
+        // For drawing only: points every few dp along the finger's path,
+        // evenly spaced however fast or slowly the screen reports it. Small
+        // movements in between, mostly the screen's own jitter, are dropped.
+        var last = drawn.lastOrNull() ?: return
+        var gap = hypot(x - last.x, y - last.y)
+        while (gap >= trailStep) {
+            val t = trailStep / gap
+            last = PointF(last.x + (x - last.x) * t, last.y + (y - last.y) * t)
+            drawn += last
+            gap = hypot(x - last.x, y - last.y)
+        }
+    }
+
+    /**
+     * The drawn trail. Each point is first averaged with its two neighbours
+     * on each side (weights 1-2-3-2-1). The points are evenly spaced, so this
+     * takes out wobble while rounding a corner by only a few dp, and unlike a
+     * running average it does not drag the line behind the finger. The line then curves through the
+     * midpoints between those points, each point the control of a quadratic
+     * Bézier, so it bends instead of turning sharply. It starts where the
+     * finger went down and ends at the finger.
+     */
+    private fun buildTrail() {
+        trail.reset()
+        if (drawn.isEmpty()) return
+        smoothed.clear()
+        for (i in drawn.indices) {
+            if (i == 0) {
+                smoothed += drawn[0]
+                continue
+            }
+            var x = 0f
+            var y = 0f
+            var weight = 0f
+            for (k in -2..2) {
+                val point = drawn.getOrNull(i + k) ?: continue
+                val w = (3 - kotlin.math.abs(k)).toFloat()
+                x += point.x * w
+                y += point.y * w
+                weight += w
+            }
+            smoothed += PointF(x / weight, y / weight)
+        }
+        val first = smoothed.first()
+        trail.moveTo(first.x, first.y)
+        for (i in 1 until smoothed.size) {
+            val control = smoothed[i]
+            val next = if (i + 1 < smoothed.size) smoothed[i + 1] else PointF(fingerX, fingerY)
+            trail.quadTo(control.x, control.y, (control.x + next.x) / 2, (control.y + next.y) / 2)
+        }
+        trail.lineTo(fingerX, fingerY)
     }
 
     /** The followed finger lifted: a swipe or a tap. */
@@ -266,6 +333,8 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
         downKey = null
         swiping = false
         points.clear()
+        drawn.clear()
+        smoothed.clear()
         trail.reset()
         invalidate()
     }
@@ -405,6 +474,9 @@ class KeyboardView @JvmOverloads constructor(context: Context, attrs: AttributeS
     private companion object {
         /** A finger that moves this many key widths from where it went down is swiping. */
         const val SWIPE_START = 0.45f
+
+        /** The drawn trail keeps a new point only after the finger has moved this far. */
+        const val TRAIL_STEP_DP = 4f
         const val REPEAT_START_MS = 400L
         const val REPEAT_MS = 50L
         const val HOST_VIEW_ID = AccessibilityNodeProvider.HOST_VIEW_ID

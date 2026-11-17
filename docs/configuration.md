@@ -48,6 +48,8 @@ that a behaviour can be traced to its number.
 | 440 dp / 260 dp / 10 dp / 12 dp | `KeyboardPlacement` | Typing keyboard on a wide screen: widest, narrowest, gap to the screen's edge, gap to a bent fold |
 | 52 dp / 42 dp / 500 dp | `KeyboardLayout` | Key row height, on a short screen, and what counts as short |
 | 0.45 key | `KeyboardView.SWIPE_START` | How far a finger moves before a touch is a swipe |
+| 4 dp | `KeyboardView.TRAIL_STEP_DP` | Spacing of the points the swipe trail is drawn through |
+| Heavy click | `Haptics` | Touch feedback on every key and button (`EFFECT_HEAVY_CLICK`) |
 | 0.4 s / 0.4 s, then 50 ms | `Typist.DOUBLE_TAP_MS`, `KeyboardView` | Double-tap Shift for caps lock; Delete starts repeating, then repeats every |
 | 3 | `Typist.SUGGESTIONS` | Places in the suggestions strip |
 | 50,000 | `words_en.txt` | Words the typing keyboard knows |
