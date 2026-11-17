@@ -14,6 +14,17 @@ object Compatibility {
     /** The first server release that has everything the keyboard uses. */
     const val MIN_SERVER_VERSION = "0.9.0"
 
+    /**
+     * True when a server speaking client contract revision [contract] (the
+     * `contract` field of `/health`) can be used by this keyboard. A server
+     * from before VoxCtrl 0.9.19 sends none, and speaks revision 1.
+     *
+     * The server's `min_client` field names the oldest VoxCtrl *desktop app*
+     * it works with; it says nothing about this keyboard, which has its own
+     * version numbers, and is not read.
+     */
+    fun speaks(contract: Int?): Boolean = (contract ?: 1) <= PROTOCOL_REVISION
+
     /** True when [serverVersion] (as `/health` reports it) is new enough. An unreadable version passes. */
     fun supports(serverVersion: String?): Boolean {
         val server = parse(serverVersion ?: return true) ?: return true

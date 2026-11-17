@@ -35,8 +35,11 @@ sealed class BarState {
 
     object Finishing : BarState()
 
-    /** The server did not answer. [holdsAudio] is true when a recording is waiting to be sent again. */
-    data class Unreachable(val server: String, val holdsAudio: Boolean) : BarState()
+    /**
+     * The server did not answer, or was too busy to ([label] then says so).
+     * [holdsAudio] is true when a recording is waiting to be sent again.
+     */
+    data class Unreachable(val server: String, val holdsAudio: Boolean, val label: String? = null) : BarState()
 
     /** Something the settings screen has to fix: a refused key, a changed certificate. */
     data class Problem(val label: String) : BarState()
@@ -239,10 +242,10 @@ class KeyboardBar(
                 glyph.setImageResource(R.drawable.ic_offline)
                 glyph.setBackgroundResource(R.drawable.bg_circle_muted)
                 glyph.imageTintList = ColorStateList.valueOf(context.getColor(R.color.warn))
-                label.text = if (showServerName && next.server.isNotEmpty()) {
-                    context.getString(R.string.cant_reach, next.server)
-                } else {
-                    context.getString(R.string.cant_reach_server)
+                label.text = when {
+                    next.label != null -> next.label
+                    showServerName && next.server.isNotEmpty() -> context.getString(R.string.cant_reach, next.server)
+                    else -> context.getString(R.string.cant_reach_server)
                 }
                 action(R.string.retry)
                 pill.setBackgroundResource(R.drawable.bg_pill_offline)

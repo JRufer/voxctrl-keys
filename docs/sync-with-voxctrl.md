@@ -20,9 +20,10 @@ a change to the other.
 | 5 | Certificate pinning: SHA-256 of the leaf certificate's DER, no name check, no downgrade | `voxctrl-pairing` (`PinnedCertificate`, `pin_for`) | `ServerClient.pinnedContext`, `requireUsable` | `ServerClientTest` (encrypted cases) |
 | 6 | How a typed address is completed; the default port 8787 | `src/lib/Settings/server-setup.ts` (`normalizeServerAddress`); `voxctrl-inference` `remote_openai.rs` (`normalize_*_url`) | `core/.../Endpoint.kt` | `EndpointTest` |
 | 7 | Connect timeout (4 s) | `remote_openai.rs` (`CONNECT_TIMEOUT`) | `ServerClient.CONNECT_TIMEOUT_MS` | — |
-| 8 | Live text by re-sending the recording so far | `docs/server.md` "Live text and server load" | `core/.../LiveClips.kt` | `LiveClipsTest` |
+| 8 | Live text by re-sending the recording so far, each clip marked `X-VoxCtrl-Purpose: live`; a busy server answers a live clip, or a dictation past a full queue, with `503` | `docs/server.md` "Live text and server load"; `crates/voxctrl-server/src/engine.rs` (`Gate`); `http.rs` (`purpose`) | `core/.../LiveClips.kt`; `ServerClient.transcribe(live = …)`, `Failure.BUSY` | `LiveClipsTest`, `ServerClientTest` |
 | 9 | The look: palette, icon | `VoxCtrl-Website` `base.css`; `src-tauri/icons/` | `app/src/main/res/values/colors.xml`, `drawable-nodpi/ic_voxctrl.png`, `mipmap-*` | — |
 | 10 | Minimum server version | Release history | `Compatibility.MIN_SERVER_VERSION` | `CompatibilityTest` |
+| 11 | The contract revision the server reports (`contract` in `/health`, from 0.9.19) | `http.rs` (`CONTRACT_REVISION`); `docs/clients.md` | `Compatibility.speaks`, `ServerInfo.contract` | `CompatibilityTest`, `ServerClientTest` |
 
 ## The client contract revision
 
@@ -30,7 +31,9 @@ a change to the other.
 points 1 to 5 that this keyboard was written against. It appears on the
 settings screen's version line, so a bug report says which contract a build
 speaks. VoxCtrl's `docs/clients.md` records the same number with the server
-release that introduced it.
+release that introduced it. From server 0.9.19, `/health` reports it as
+`contract`, and a keyboard that finds a higher number than its own asks to be
+updated rather than failing in some stranger way.
 
 Raise the revision, in both repositories together, when the server changes
 something in points 1 to 5 in a way an existing keyboard would notice. Do not

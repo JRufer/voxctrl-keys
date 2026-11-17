@@ -70,6 +70,7 @@ Be precise about this when changing or releasing anything.
 | The keyboard on a real phone | **Partly.** Seen on a Galaxy Z Fold 8 cover screen with 0.1.0: the bar shows, the server's status shows, and a dictation was typed into the app's Try it box. Not yet confirmed: live text, other apps, switching keyboards, Retry |
 | The bar on a Galaxy Z Fold 8 | Cover screen upright seen. The fix for the row overlapping the system's navigation strip (0.1.1) and every other screen and posture are **not yet seen on the device**. [The Keyboard Bar](./ui.md#galaxy-z-fold-8) has the list |
 | Against a real `voxctrl-server` | Seen working once, as above. The stand-in server in the tests is written from the server's source and documentation |
+| The live-clip header, `Server busy` and the contract check (0.1.2) | `core` unit tests against the stand-in server. **Not yet seen** on a phone or against a real 0.9.20 server |
 
 When one of these is verified, update this table.
 

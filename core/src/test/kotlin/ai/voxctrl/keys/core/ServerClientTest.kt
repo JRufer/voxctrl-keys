@@ -31,6 +31,7 @@ class ServerClientTest {
     private var seenAuthorization: String? = null
     private var seenContentType: String? = null
     private var seenBody: ByteArray = ByteArray(0)
+    private var seenPurpose: String? = null
 
     @After
     fun stop() {
@@ -65,6 +66,7 @@ class ServerClientTest {
         http.createContext("/v1/audio/transcriptions") {
             seenAuthorization = it.requestHeaders.getFirst("Authorization")
             seenContentType = it.requestHeaders.getFirst("Content-Type")
+            seenPurpose = it.requestHeaders.getFirst("X-VoxCtrl-Purpose")
             seenBody = it.requestBody.readBytes()
             if (it.authorized()) {
                 if (String(seenBody, Charsets.ISO_8859_1).contains("RIFF")) {
@@ -127,6 +129,58 @@ class ServerClientTest {
         assertTrue(body.contains("name=\"language\"\r\n\r\nen"))
         val boundary = seenContentType!!.substringAfter("boundary=")
         assertTrue(body.endsWith("\r\n--$boundary--\r\n"))
+    }
+
+    @Test
+    fun aLiveClipIsMarkedAndADictationIsNot() {
+        val client = ServerClient(ServerConfig(plainServer(), key, null))
+        client.transcribe(wav(), live = true)
+        assertEquals("live", seenPurpose)
+        client.transcribe(wav())
+        assertNull(seenPurpose)
+    }
+
+    @Test
+    fun aBusyServerIsNotAnErrorInTheSettings() {
+        // What VoxCtrl 0.9.20 answers a dictation when 8 are already waiting,
+        // and a live clip whenever the model is busy.
+        val http = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        http.createContext("/v1/audio/transcriptions") {
+            it.requestBody.readBytes()
+            it.responseHeaders.add("Retry-After", "1")
+            it.reply(
+                503,
+                """{"error":{"message":"The server is busy: 8 dictations are already waiting. Try again in a moment.","type":"server_busy"}}""",
+            )
+        }
+        http.start()
+        server = http
+        val client = ServerClient(ServerConfig("http://127.0.0.1:${http.address.port}/v1", key, null))
+        val error = failureOf { client.transcribe(wav()) }
+        assertEquals(Failure.BUSY, error.failure)
+        assertTrue(error.message!!.startsWith("The server is busy"))
+    }
+
+    @Test
+    fun probeReadsTheContractRevisionWhenTheServerSendsOne() {
+        val http = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        http.createContext("/health") {
+            it.reply(
+                200,
+                """{"status":"ok","version":"2.0.0","contract":2,"min_client":"2.0.0","model":"parakeet/tdt-0.6b-v3","cleanup":false,"tts":false,"llm":false}""",
+            )
+        }
+        http.createContext("/v1/models") {
+            it.reply(200, """{"object":"list","data":[{"id":"parakeet/tdt-0.6b-v3"}]}""")
+        }
+        http.start()
+        server = http
+        val info = ServerClient(ServerConfig("http://127.0.0.1:${http.address.port}/v1", key, null)).probe()
+        assertEquals(2, info.contract)
+        assertFalse(Compatibility.speaks(info.contract))
+        http.stop(0)
+        // A server from before 0.9.19 sends no contract at all.
+        assertNull(ServerClient(ServerConfig(plainServer(), key, null)).probe().contract)
     }
 
     @Test
