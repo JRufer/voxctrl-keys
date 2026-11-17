@@ -3,11 +3,14 @@ package ai.voxctrl.keys
 import ai.voxctrl.keys.core.Compatibility
 import ai.voxctrl.keys.core.Endpoint
 import ai.voxctrl.keys.core.Failure
+import ai.voxctrl.keys.core.KeyboardLayout
 import ai.voxctrl.keys.core.LiveClips
 import ai.voxctrl.keys.core.ServerClient
 import ai.voxctrl.keys.core.ServerException
 import ai.voxctrl.keys.core.TextJoiner
+import ai.voxctrl.keys.core.Typist
 import ai.voxctrl.keys.core.Wav
+import ai.voxctrl.keys.core.WordList
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,6 +18,7 @@ import android.inputmethodservice.InputMethodService
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.InputType
 import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
@@ -24,7 +28,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * The keyboard: a short bar with a microphone button.
+ * The keyboard: a short bar with a microphone button, and a typing keyboard
+ * under it that the bar's keyboard button shows and hides. The keyboard
+ * always opens with the typing keyboard hidden.
  *
  * A dictation goes: tap, [Recorder] fills a buffer in memory, tap again, the
  * buffer is sent to the user's VoxCtrl server as a WAV file, and the answer is
@@ -68,9 +74,22 @@ class VoxKeyboardService : InputMethodService() {
     private var online: Boolean? = null
     private var lastProbeAt = 0L
 
+    /** Types for the typing keyboard; see [Typist]. Its word list arrives from a background read. */
+    private val typist = Typist(null, FieldEditor())
+
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        typist.onChange = { bar?.refreshTyping() }
+        // About 50,000 lines: read off the main thread so the keyboard appears at once.
+        Thread({
+            val words = try {
+                assets.open(WORD_LIST).bufferedReader().use { WordList.read(it) }
+            } catch (_: Exception) {
+                null // letters still type; there is just no swipe or suggestions
+            }
+            if (words != null) main.post { typist.useWords(words) }
+        }, "voxctrl-words").start()
     }
 
     override fun onCreateInputView(): View {
@@ -79,12 +98,14 @@ class VoxKeyboardService : InputMethodService() {
             root = view,
             prefs = prefs,
             onPill = ::onPillTapped,
-            onSwitch = ::switchKeyboard,
-            onSwitchLong = ::showKeyboardPicker,
+            onKeyboardButton = ::toggleTyping,
+            onKeyboardButtonLong = ::showKeyboardPicker,
             onRight = ::discard,
             onBackspace = ::backspace,
         )
         bar = created
+        created.attach(typist)
+        created.setExpanded(expanded)
         foldWatcher?.stop()
         foldWatcher = FoldWatcher(this) { created.setFold(it) }.also { it.start() }
         created.show(state)
@@ -96,6 +117,7 @@ class VoxKeyboardService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        startTyping(info)
         bar?.refreshLayout()
         if (state !is BarState.Listening && state !is BarState.Finishing) {
             show(restingState())
@@ -105,7 +127,38 @@ class VoxKeyboardService : InputMethodService() {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         abandon()
+        typist.finishComposing()
         super.onFinishInputView(finishingInput)
+    }
+
+    /** The keyboard went away: next time it opens, it opens as the voice bar alone. */
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        setExpanded(false)
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int,
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        // The user moved the cursor or selected text: the word being typed is
+        // no longer at the cursor, so it is left as it is.
+        if (ownEditsPending > 0 && SystemClock.uptimeMillis() - lastOwnEdit < OWN_EDIT_WINDOW_MS) {
+            // The field reporting one of the keyboard's own edits, perhaps an
+            // older one than the field now holds: not the user moving the cursor.
+            ownEditsPending--
+            return
+        }
+        ownEditsPending = 0
+        if (typist.isComposing && (candidatesEnd == -1 || newSelStart != newSelEnd || newSelEnd != candidatesEnd)) {
+            currentInputConnection?.finishComposingText()
+            typist.forgetComposing()
+        }
     }
 
     override fun onDestroy() {
@@ -138,10 +191,123 @@ class VoxKeyboardService : InputMethodService() {
         }
     }
 
-    private fun switchKeyboard() {
+    // ── The typing keyboard ───────────────────────────────────────────────────
+
+    private var expanded = false
+
+    private fun toggleTyping() {
         haptic()
-        abandon()
-        if (!switchToPreviousInputMethod()) showKeyboardPicker()
+        setExpanded(!expanded)
+    }
+
+    private fun setExpanded(show: Boolean) {
+        if (!show) typist.finishComposing()
+        expanded = show
+        bar?.setExpanded(show)
+    }
+
+    /** A new field: what the typing keyboard may do in it. */
+    private fun startTyping(info: EditorInfo?) {
+        val type = info?.inputType ?: InputType.TYPE_NULL
+        val kind = type and InputType.TYPE_MASK_CLASS
+        val variation = type and InputType.TYPE_MASK_VARIATION
+        val text = kind == InputType.TYPE_CLASS_TEXT
+        val private = text && variation in setOf(
+            InputType.TYPE_TEXT_VARIATION_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+        )
+        val noWords = !text || private || variation in setOf(
+            InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+            InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
+            InputType.TYPE_TEXT_VARIATION_URI,
+        ) || type and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0
+        val numbers = kind == InputType.TYPE_CLASS_NUMBER || kind == InputType.TYPE_CLASS_PHONE ||
+            kind == InputType.TYPE_CLASS_DATETIME
+        typist.startField(
+            wordMode = !noWords,
+            autoCaps = text && !private,
+            page = if (numbers) KeyboardLayout.Page.SYMBOLS else KeyboardLayout.Page.LETTERS,
+        )
+    }
+
+    /** Edits the keyboard made whose cursor report has not come back yet; see onUpdateSelection. */
+    private var ownEditsPending = 0
+    private var lastOwnEdit = 0L
+
+    /** The field the keyboard is typing into, as the [Typist] sees it. */
+    private inner class FieldEditor : Typist.Editor {
+        private var depth = 0
+        private var edited = false
+
+        override fun batch(edits: () -> Unit) {
+            val connection = currentInputConnection
+            if (depth++ == 0) {
+                edited = false
+                connection?.beginBatchEdit()
+            }
+            try {
+                edits()
+            } finally {
+                if (--depth == 0) {
+                    connection?.endBatchEdit()
+                    if (edited) {
+                        ownEditsPending++
+                        lastOwnEdit = SystemClock.uptimeMillis()
+                    }
+                }
+            }
+        }
+
+        private fun edit() {
+            edited = true
+            if (depth == 0) {
+                ownEditsPending++
+                lastOwnEdit = SystemClock.uptimeMillis()
+            }
+        }
+
+        override fun textBeforeCursor(n: Int): CharSequence? = currentInputConnection?.getTextBeforeCursor(n, 0)
+
+        override fun setComposing(text: String) {
+            edit()
+            currentInputConnection?.setComposingText(text, 1)
+        }
+
+        override fun commit(text: String) {
+            edit()
+            currentInputConnection?.commitText(text, 1)
+        }
+
+        override fun finishComposing() {
+            edit()
+            currentInputConnection?.finishComposingText()
+        }
+
+        override fun deleteBefore() {
+            edit()
+            sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+        }
+
+        override fun enter() {
+            edit()
+            val info = currentInputEditorInfo
+            val action = (info?.imeOptions ?: 0) and EditorInfo.IME_MASK_ACTION
+            val multiLine = (info?.inputType ?: 0) and InputType.TYPE_TEXT_FLAG_MULTI_LINE != 0
+            val noAction = (info?.imeOptions ?: 0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION != 0
+            if (info == null || multiLine || noAction || action == EditorInfo.IME_ACTION_NONE ||
+                action == EditorInfo.IME_ACTION_UNSPECIFIED
+            ) {
+                sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+            } else {
+                currentInputConnection?.performEditorAction(action)
+            }
+        }
+
+        override fun capsAtCursor(): Boolean {
+            val type = currentInputEditorInfo?.inputType ?: return false
+            return (currentInputConnection?.getCursorCapsMode(type) ?: 0) != 0
+        }
     }
 
     private fun showKeyboardPicker() {
@@ -151,7 +317,8 @@ class VoxKeyboardService : InputMethodService() {
 
     private fun backspace() {
         haptic()
-        sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+        // Through the typist, so a word being typed loses a letter rather than its underline.
+        typist.tapDelete()
     }
 
     // ── A dictation ───────────────────────────────────────────────────────────
@@ -175,6 +342,8 @@ class VoxKeyboardService : InputMethodService() {
             main.postDelayed({ if (state is BarState.Notice) show(restingState()) }, NOTICE_MS)
             return
         }
+        // A word being typed is finished as it is; the dictation follows it.
+        typist.finishComposing()
         recorder = started
         heldAudio = null
         liveInFlight = false
@@ -405,5 +574,9 @@ class VoxKeyboardService : InputMethodService() {
         const val PROBE_INTERVAL_MS = 15_000L
         const val PROBE_READ_TIMEOUT_MS = 6_000
         const val NOTICE_MS = 1_600L
+        const val WORD_LIST = "words_en.txt"
+
+        /** How long the keyboard waits for the field to report its own edits before trusting reports again. */
+        const val OWN_EDIT_WINDOW_MS = 1_000L
     }
 }

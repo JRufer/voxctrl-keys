@@ -97,8 +97,10 @@ Open **VoxCtrl Keys**. The first two sections walk you through it:
    see [Privacy & Security](./privacy.md) for what this one does with that.
 2. **Microphone → Allow.**
 
-You do not have to make it your default keyboard. Keep your typing keyboard as
-the default and switch to VoxCtrl when you want to speak (step 6).
+You do not have to make it your default keyboard. Keep your usual keyboard as
+the default and switch to VoxCtrl when you want to speak (step 6). VoxCtrl
+also has a basic typing keyboard with swipe typing, behind the keyboard button
+at the left of its bar, for a few words between dictations.
 
 ## 5. Pair with the server
 

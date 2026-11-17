@@ -8,4 +8,12 @@
     <dimen name="bar_padding_top">6dp</dimen>
     <dimen name="bar_padding_bottom">8dp</dimen>
     <dimen name="pill_icon">38dp</dimen>
+
+    <!-- The typing keyboard. Row heights and widths are in core: KeyboardLayout, KeyboardPlacement. -->
+    <dimen name="suggestions_height">44dp</dimen>
+    <dimen name="key_gap">3dp</dimen>
+    <dimen name="key_radius">8dp</dimen>
+    <dimen name="key_text">21sp</dimen>
+    <dimen name="key_text_small">14sp</dimen>
+    <dimen name="swipe_trail">6dp</dimen>
 </resources>

@@ -15,9 +15,14 @@ object TextJoiner {
     fun join(before: CharSequence?, dictated: String): String {
         val text = dictated.trim()
         if (text.isEmpty()) return ""
-        if (before.isNullOrEmpty()) return text
+        return if (needsSpace(before, text)) " $text" else text
+    }
+
+    /** True when [text] typed after [before] needs a space in front of it. */
+    fun needsSpace(before: CharSequence?, text: String): Boolean {
+        if (before.isNullOrEmpty() || text.isEmpty()) return false
         val last = before[before.length - 1]
         val startsWithPunctuation = text[0] in ".,;:!?)]}"
-        return if (last.isWhitespace() || last in NO_SPACE_AFTER || startsWithPunctuation) text else " $text"
+        return !(last.isWhitespace() || last in NO_SPACE_AFTER || startsWithPunctuation)
     }
 }

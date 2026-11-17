@@ -1,7 +1,10 @@
 # The Keyboard Bar
 
-The whole keyboard is one row. This page describes its parts, every state it
-can be in, and how it lays itself out, including on a foldable.
+The keyboard opens as one row, the voice bar. Its keyboard button shows a
+full typing keyboard under the bar and hides it again. This page describes the
+bar's parts, every state it can be in, where the typing keyboard goes, and how
+both lay themselves out, including on a foldable. How the typing keyboard
+types and swipes is in [The Typing Keyboard](./typing.md).
 
 The design mockup is the "VoxCtrl voice keyboard for Android" canvas; the
 colours and type follow the VoxCtrl design system (dark surfaces, cyan accent,
@@ -13,9 +16,10 @@ monospace for status).
 2. [States](#states)
 3. [Live text](#live-text)
 4. [Layout rules](#layout-rules)
-5. [Galaxy Z Fold 8](#galaxy-z-fold-8)
-6. [Accessibility](#accessibility)
-7. [Where this lives in the code](#where-this-lives-in-the-code)
+5. [The typing keyboard](#the-typing-keyboard)
+6. [Galaxy Z Fold 8](#galaxy-z-fold-8)
+7. [Accessibility](#accessibility)
+8. [Where this lives in the code](#where-this-lives-in-the-code)
 
 ---
 
@@ -31,12 +35,14 @@ monospace for status).
  │ └────┘  ╰──────────────────────────────────────────╯  └────┘   │ │
  │                                                                │ ┴ 8dp
  └────────────────────────────────────────────────────────────────┘
-   switch            microphone pill                     backspace
+   keyboard          microphone pill                     backspace
    48×48dp           48dp tall                           48×48dp
 ```
 
 Total height: 63 dp, plus the height of the system's navigation strip
-beneath it.
+beneath it. With the typing keyboard showing, add 44 dp of suggestions and
+four rows of keys (52 dp each, or 42 dp on a screen less than 500 dp tall): about 320
+dp in all on most phones.
 
 **The strip under the row.** A keyboard's window reaches the bottom edge of
 the screen. With gesture navigation, Android draws the gesture handle there
@@ -47,9 +53,9 @@ continues behind them. The strip's height is the system's, not the bar's.
 
 | Part | Tap | Hold |
 |---|---|---|
-| **Switch** (left) | Back to the previous keyboard. Stops and discards a recording in progress | The system's keyboard picker |
+| **Keyboard** (left) | Shows the typing keyboard under the bar, or hides it. Cyan while it shows. A dictation in progress carries on | The system's keyboard picker |
 | **Microphone pill** (middle) | The primary action of the current state (see below) | — |
-| **Right button** | Backspace. While listening, or with a recording waiting for Retry: discard it | Backspace repeats |
+| **Right button** | Backspace (a letter of the word being typed, or a whole swiped word, like the typing keyboard's ⌫). While listening, or with a recording waiting for Retry: discard it | Backspace repeats |
 
 The pill's icon is the VoxCtrl app icon. Its right-hand end shows the server's
 name with a status dot: green when the last check succeeded, amber when it
@@ -74,7 +80,7 @@ Transitions worth knowing:
   dropped without contacting the server.
 - A recording stops by itself at five minutes and is sent.
 - If the keyboard is hidden for any reason (you leave the app, switch
-  keyboards, the screen locks), recording stops at once and anything not yet
+  keyboards, the screen locks), the typing keyboard is collapsed, and recording stops at once and anything not yet
   typed is dropped: a late answer is never typed into a different field. Live
   text already on screen stays.
 - The server is checked when the keyboard appears, at most every 15 seconds
@@ -126,6 +132,41 @@ Other cases:
 These rules are one pure function, `BarLayout.compute(widthDp, preferred,
 fold)`, with a unit test for each row of the tables on this page.
 
+## The typing keyboard
+
+**It always opens collapsed.** The keyboard button shows it; tapping the
+button again, or the keyboard being hidden for any reason, collapses it. The
+voice bar above it is the same whether it shows or not.
+
+```
+ ┌──────────────────────────────────────────────┐
+ │ [⌨]  ( (◉) Tap to speak   ● homeserver )  [⌫] │  voice bar, unchanged
+ ├──────────────────────────────────────────────┤
+ │      help     │    hello    │     hero        │  suggestions, 44 dp
+ │  q  w  e  r  t  y  u  i  o  p                 │
+ │    a  s  d  f  g  h  j  k  l                  │  four rows of keys
+ │  ⇧   z  x  c  v  b  n  m   ⌫                  │  52 dp each
+ │  ?123  ,  [   English   ]  .  ↵               │
+ └──────────────────────────────────────────────┘
+```
+
+Where it sits:
+
+| Window | Rule |
+|---|---|
+| Narrower than 600 dp (**compact**) | Full width, like any phone keyboard. The hand setting does not apply |
+| 600 dp or wider (**wide**) | A block 440 dp wide (about a phone keyboard), 10 dp from the edge of your hand's side: the right edge by default, the left edge with **Typing keyboard on wide screens** set to Left-handed. The other side is left empty |
+| Wide, with a vertical fold that is **bent** | The block stays on your hand's half, 12 dp clear of the fold, as wide as that half allows up to 440 dp (never under 260 dp) |
+| A screen less than 500 dp tall (a phone sideways) | Rows of 42 dp instead of 52, so the app keeps some of the screen |
+
+The hand setting and **Microphone position on wide screens** are separate: a
+left-handed user will usually want both on Left, so the pill and the keyboard
+are both under the left thumb, next to the keyboard button.
+
+These rules are `KeyboardPlacement.compute(widthDp, hand, fold)` and
+`KeyboardLayout.rowHeightFor(screenHeightDp)`, tested in
+`KeyboardLayoutTest`.
+
 ## Galaxy Z Fold 8
 
 The Fold 8 has a 5.5-inch cover screen (1,248 × 1,972) and a 7.6-inch inner
@@ -146,13 +187,23 @@ of this table without breaking any.
 | Half open like a laptop (tabletop, horizontal fold) | ~616 or ~816 dp | As open flat; the keyboard is on the lower half |
 | Unfolding or folding while the keyboard is up | changes | The bar is rebuilt for the new width and fold. A recording in progress is meant to carry on across the change; this is the least certain case until it is tried on the device |
 
-`BarLayoutTest` runs each of these. On the device itself, so far:
+The typing keyboard on the same screens:
+
+| How it is held | Typing keyboard |
+|---|---|
+| Closed, upright (cover screen, ~416 dp) | Full width |
+| Closed sideways, or open flat (~616 to ~816 dp) | 440 dp block on the hand's side |
+| Half open like a book | On the hand's half: about 385 dp wide at ~816 dp, about 285 dp at ~616 dp |
+| Half open like a laptop | As open flat, on the lower half |
+
+`BarLayoutTest` and `KeyboardPlacementTest` run each of these. On the device itself, so far:
 
 | | Status |
 |---|---|
 | Cover screen, upright | **Seen working** (0.1.0): compact layout, server name and status dot shown, dictation typed into a text field |
 | The row against the system's navigation strip | Overlapped in 0.1.0. Fixed in 0.1.1 by padding the bar by the inset; **the fix has not been seen on the device yet** |
 | Cover screen sideways; inner screen, upright and sideways | Not yet seen |
+| The typing keyboard (0.2.0), on any screen | Not yet seen. Rendered off-device from the app's own views for the 412 dp and 816 dp cases while it was built |
 | Book and tabletop postures | Not yet seen. Still open: whether the Fold 8 reports its fold and posture to a keyboard at all. If it does not, the book-posture rule never triggers and the pill stays centred, which is usable but sits on the hinge |
 
 ## Accessibility
@@ -160,7 +211,12 @@ of this table without breaking any.
 - Every control is a real button with a spoken description that changes with
   the state ("Start dictation", "Stop and insert text", "Discard this
   recording").
-- Touch targets are 48 × 48 dp or larger.
+- The bar's touch targets are 48 × 48 dp or larger. The typing keyboard's keys
+  are a tenth of its width (41 dp on a 412 dp phone, 44 dp on a wide screen)
+  by 52 dp, like any QWERTY keyboard; the suggestions are 44 dp tall.
+- Each key of the typing keyboard is a separate item for TalkBack, read out
+  by name ("Shift on", "Delete", "Symbols"), and explore-by-touch then
+  double-tap types it. Swiping is not available through TalkBack.
 - State is never carried by colour alone: each state has its own glyph and
   wording, and the status dot is accompanied by the pill's text when the
   server is unreachable.
@@ -174,9 +230,11 @@ of this table without breaking any.
 | | |
 |---|---|
 | `app/src/main/res/layout/keyboard_bar.xml` | The row and its views |
-| `app/.../KeyboardBar.kt` | `BarState`, showing a state, applying the layout, padding for the system's insets |
+| `app/.../KeyboardBar.kt` | `BarState`, showing a state, applying the layout, padding for the system's insets, showing and placing the typing keyboard |
+| `app/.../KeyboardView.kt` | The typing keyboard's keys; see [The Typing Keyboard](./typing.md#where-this-lives-in-the-code) |
 | `app/.../WaveformView.kt` | The waveform |
 | `app/.../FoldWatcher.kt` | Fold and posture, via `androidx.window` |
-| `core/.../BarLayout.kt` | The layout rules |
+| `core/.../BarLayout.kt` | The bar's layout rules |
+| `core/.../KeyboardPlacement.kt` | Where the typing keyboard goes |
 | `core/src/test/.../BarLayoutTest.kt` | The Fold 8 cases |
 | `app/src/main/res/values/dimens.xml` | Sizes. `bar_button`, `bar_gap` and `bar_padding_side` must add up to `BarLayout.SIDE_DP` |

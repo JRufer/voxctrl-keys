@@ -2,7 +2,8 @@
 
 Two Gradle modules. `core` knows nothing about Android and holds every rule
 that can be stated without it. `app` is the Android side: the keyboard
-service, the views, the microphone and the settings.
+service, the views, the microphone and the settings. Its one asset is the
+typing keyboard's word list.
 
 ```
 voxctrl-keys/
@@ -16,19 +17,26 @@ voxctrl-keys/
 │       ├── Json.kt             # A small JSON reader
 │       ├── LiveClips.kt        # When to send a live-text clip
 │       ├── TextJoiner.kt       # Spacing between existing text and a dictation
-│       └── BarLayout.kt        # Where the pill goes for a width, a preference and a fold
+│       ├── BarLayout.kt        # Where the pill goes for a width, a preference and a fold
+│       ├── KeyboardPlacement.kt # Width and side of the typing keyboard
+│       ├── KeyboardLayout.kt   # The typing keyboard's pages, key positions, hit-testing
+│       ├── SwipeDecoder.kt     # A swipe's path to words
+│       ├── WordList.kt         # The word list: lookup, completions
+│       └── Typist.kt           # What taps, swipes and suggestions do to the field
 │
 └── app/                                    # Android application
     └── src/main/
         ├── AndroidManifest.xml
         ├── kotlin/ai/voxctrl/keys/
-        │   ├── VoxKeyboardService.kt   # The InputMethodService: taps, the dictation, typing the result
-        │   ├── KeyboardBar.kt          # BarState and the views that show it
+        │   ├── VoxKeyboardService.kt   # The InputMethodService: taps, the dictation, typing the result, the field for the Typist
+        │   ├── KeyboardBar.kt          # BarState and the views that show it; showing and placing the typing keyboard
+        │   ├── KeyboardView.kt         # The typing keyboard's keys: drawing, touches, swipes, TalkBack
         │   ├── Recorder.kt             # AudioRecord into a memory buffer
         │   ├── WaveformView.kt         # The moving bars while listening
         │   ├── FoldWatcher.kt          # Fold and posture, via androidx.window
         │   ├── Prefs.kt                # Settings; the API key encrypted with the Keystore
         │   └── SettingsActivity.kt     # The one settings screen
+        ├── assets/words_en.txt         # The typing keyboard's word list (CC BY-SA 4.0; see docs/typing.md)
         └── res/                        # Layouts, vector icons, strings, the VoxCtrl palette
 ```
 
@@ -95,12 +103,45 @@ answer whose request was made under an older generation is thrown away. This is
 what guarantees a transcript is never typed into a field other than the one it
 was dictated for.
 
+## Typing
+
+The typing keyboard is three pieces with one direction of travel:
+
+```
+KeyboardView ──taps, swipes──▶ Typist ──edits──▶ Typist.Editor ──▶ InputConnection
+ (app: pixels,                  (core: what each                (app: FieldEditor in
+  touches, trail)                action does)                    VoxKeyboardService)
+        ▲                          │
+        └────── onChange ──────────┘  (page, shift, suggestions → redraw)
+```
+
+- `Typist` holds the word being composed, shift, the page and the
+  suggestions, and turns each action into edits on `Typist.Editor`, an
+  interface with the six operations it needs (text before the cursor, set and
+  finish composing text, commit, delete, Enter, caps mode). The tests drive it
+  with a fake field.
+- `FieldEditor` implements that interface over `currentInputConnection`, and
+  wraps each action's edits in `beginBatchEdit`/`endBatchEdit`, so the field
+  reports one cursor change per action.
+- **Whose cursor move was it?** When the cursor moves (`onUpdateSelection`)
+  and the composing word is no longer at the cursor, the user moved it, and
+  the word is left as it is. But the field also reports the keyboard's own
+  edits, and late. So each batch the keyboard makes is counted, and that many
+  reports (within a second) are taken as its own before a report is trusted to
+  mean the user moved the cursor.
+- The word list is read on a `voxctrl-words` thread when the service starts,
+  and handed to the `Typist` on the main thread.
+- While a dictation's live text is in the field (listening, finishing, or held
+  for Retry), `KeyboardBar` disables the keys, since the live text is the
+  field's composing text too.
+
 ## Threading
 
 | Thread | Does |
 |---|---|
 | Main | All view work, all `InputConnection` calls, all state |
 | `voxctrl-recorder` | Blocks on `AudioRecord.read`; lives for one recording |
+| `voxctrl-words` | Reads the word list once when the service starts |
 | Network (one thread) | Every request to the server, one at a time. The server handles one transcription at a time anyway, and a single thread means a final upload queues behind a live clip instead of racing it |
 
 State (`state`, `generation`, `recorder`, `heldAudio`) is touched only on the
@@ -108,7 +149,9 @@ main thread. The recorder's buffer is the one shared structure, guarded by a
 lock inside `Recorder`.
 
 There are no coroutines and no third-party libraries in the app beyond
-`androidx.window` (and `androidx.core`, which it needs). The keyboard is small
+`androidx.window` (and `androidx.core`, which it needs). The typing keyboard's
+TalkBack support uses the framework's `AccessibilityNodeProvider` directly
+rather than adding `androidx.customview`. The keyboard is small
 enough that a handler and one executor are easier to follow than a framework.
 
 ## The bar and its layout

@@ -42,6 +42,9 @@ All tests are in `core/src/test` and run on the JVM.
 | `PairingCodeTest` | Reading and refusing pairing codes; which address wins |
 | `EndpointTest` | Address completion, URLs, tailnet / local / public |
 | `BarLayoutTest` | The bar on every Galaxy Z Fold 8 screen and posture, and a sweep of widths |
+| `KeyboardLayoutTest`, `KeyboardPlacementTest` | The typing keyboard's pages and hit-testing; where it sits for each hand, width and fold |
+| `SwipeDecoderTest`, `WordListTest` | Swipes to words against the real word list, including simulated sloppy swipes over the 1,500 most common words |
+| `TypistTest` | Tapping, shift and caps lock, suggestions, swiping, delete, punctuation spacing, password fields, against a fake text field |
 | `LiveClipsTest`, `TextJoinerTest`, `WavTest`, `JsonTest`, `CompatibilityTest` | The small rules |
 
 `core/src/test/resources/test-server.p12` is a throwaway self-signed
@@ -57,6 +60,13 @@ keytool -genkeypair -alias server -keyalg EC -groupname secp256r1 -validity 3650
 The `app` module has no automated tests yet. Its logic is kept thin on
 purpose: anything that can be tested is moved to `core`.
 
+The typing tests read the committed word list,
+`app/src/main/assets/words_en.txt` (the `core` test task is given its path).
+To change the list, edit and rerun `scripts/build-wordlist.py` (it needs
+Python with `wordfreq` and the `wordlist-english` npm package; the commands
+are at the top of the script) and commit the result; never edit the list by
+hand.
+
 ## What is verified
 
 Be precise about this when changing or releasing anything.
@@ -71,6 +81,7 @@ Be precise about this when changing or releasing anything.
 | The bar on a Galaxy Z Fold 8 | Cover screen upright seen. The fix for the row overlapping the system's navigation strip (0.1.1) and every other screen and posture are **not yet seen on the device**. [The Keyboard Bar](./ui.md#galaxy-z-fold-8) has the list |
 | Against a real `voxctrl-server` | Seen working once, as above. The stand-in server in the tests is written from the server's source and documentation |
 | The live-clip header, `Server busy` and the contract check (0.1.2) | `core` unit tests against the stand-in server. **Not yet seen** on a phone or against a real 0.9.20 server |
+| The typing keyboard (0.2.0) | Its rules (keys, placement, swipe decoding, editing) are `core` unit tests. The app's own layouts and views were rendered off-device (Robolectric) at 412 dp and 816 dp, collapsed, expanded, swiping, left- and right-handed and in book posture, while it was built; that render is not part of the repository. **Not yet run on a phone**: real touches and swipes, the swipe accuracy of a real finger, typing into other apps, TalkBack, and the cursor-tracking in `onUpdateSelection` are all unconfirmed |
 
 When one of these is verified, update this table.
 

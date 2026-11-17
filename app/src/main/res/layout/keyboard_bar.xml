@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The whole keyboard: one short row.
+  The voice bar: one short row,
 
-      [switch keyboard] [microphone pill] [backspace / discard]
+      [keyboard] [microphone pill] [backspace / discard]
+
+  and under it the typing keyboard, hidden until the keyboard button is
+  tapped. KeyboardBar sizes and places the typing keyboard following
+  KeyboardPlacement in the core module.
 
   The row is laid out here for a compact window. KeyboardBar re-weights the
   pill and the two spaces for wide windows and folds, following
@@ -147,4 +151,47 @@
             android:src="@drawable/ic_backspace"
             android:tint="@color/txt_1" />
     </LinearLayout>
+    <!-- The typing keyboard: suggestions, then the keys. Gone until expanded. -->
+    <FrameLayout
+        android:id="@+id/keyboard_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/line" />
+
+        <LinearLayout
+            android:id="@+id/keyboard_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/suggestions"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/suggestions_height"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView android:id="@+id/suggestion_left" style="@style/Suggestion" />
+
+                <View style="@style/SuggestionDivider" />
+
+                <TextView android:id="@+id/suggestion_middle" style="@style/Suggestion" android:fontFamily="sans-serif-medium" android:textColor="@color/txt_0" />
+
+                <View style="@style/SuggestionDivider" />
+
+                <TextView android:id="@+id/suggestion_right" style="@style/Suggestion" />
+            </LinearLayout>
+
+            <ai.voxctrl.keys.KeyboardView
+                android:id="@+id/keys"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+    </FrameLayout>
 </LinearLayout>

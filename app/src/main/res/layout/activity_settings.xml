@@ -107,6 +107,15 @@
             android:entries="@array/mic_positions"
             android:minHeight="48dp" />
 
+        <TextView style="@style/SettingsLabel" android:labelFor="@+id/spinner_hand" android:text="@string/keyboard_hand" />
+        <Spinner
+            android:id="@+id/spinner_hand"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/keyboard_hands"
+            android:minHeight="48dp" />
+        <TextView style="@style/SettingsBody" android:text="@string/keyboard_hand_note" />
+
         <!-- Try it -->
         <TextView style="@style/SettingsHeading" android:text="@string/section_try" />
         <EditText

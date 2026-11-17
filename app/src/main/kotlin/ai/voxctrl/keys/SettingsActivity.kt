@@ -3,6 +3,7 @@ package ai.voxctrl.keys
 import ai.voxctrl.keys.core.BarLayout
 import ai.voxctrl.keys.core.Compatibility
 import ai.voxctrl.keys.core.Endpoint
+import ai.voxctrl.keys.core.KeyboardPlacement
 import ai.voxctrl.keys.core.PairingCode
 import ai.voxctrl.keys.core.PairingException
 import ai.voxctrl.keys.core.ServerClient
@@ -96,6 +97,16 @@ class SettingsActivity : Activity() {
         position.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, index: Int, id: Long) {
                 prefs.pillPosition = BarLayout.Position.values()[index]
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
+        val hand = findViewById<Spinner>(R.id.spinner_hand)
+        hand.setSelection(prefs.hand.ordinal)
+        hand.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, index: Int, id: Long) {
+                prefs.hand = KeyboardPlacement.Hand.values()[index]
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit

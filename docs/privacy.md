@@ -13,9 +13,11 @@ states exactly what VoxCtrl Keys does with that, and how to check it.
   storage.
 - **Text is not kept.** The transcript is typed into the app you are using and
   forgotten. There is no history.
-- **The keyboard has no letter keys**, so it does not see your typing at all.
-  It reads one character before the cursor when a dictation starts, to decide
-  whether a space is needed.
+- **What you type stays on the phone.** The typing keyboard sends nothing
+  anywhere: swipes are decoded and suggestions looked up on the phone, from a
+  word list that ships with the app. It keeps only the word being typed, in
+  memory, and learns nothing. It reads the character before the cursor to
+  decide spacing and capitals, as dictation does when it starts.
 - **The microphone is open only between your tap to start and your tap to
   stop**, and closes immediately if the keyboard is hidden.
 
@@ -77,7 +79,9 @@ Nothing is backed up: `allowBackup` is off and the data-extraction rules
 exclude everything from both cloud backup and device-to-device transfer, so a
 new phone has to be paired again. Uninstalling removes it all.
 
-No audio and no transcript is ever stored. A recording the server did not
+No audio, no transcript and nothing typed is ever stored. The typing
+keyboard's word list is read-only and part of the app; nothing is added to
+it. A recording the server did not
 answer for is kept **in memory** for the Retry button and is dropped when you
 tap the X, when the keyboard is hidden, or when the app's process ends.
 
@@ -94,8 +98,10 @@ keyboard itself, which Android runs only while it is the selected keyboard.
 
 **Android's warning when you turn the keyboard on** ("this input method may be
 able to collect all the text you type") is shown for every third-party
-keyboard. For this one: it has no keys to type with, and the only text it
-handles is the transcript it is about to insert.
+keyboard. For this one: what you tap or swipe on its typing keyboard is
+turned into text on the phone and typed into the field, and is not stored or
+sent; the only text that crosses the network is the transcript coming back
+from your server.
 
 ## How to verify
 
